@@ -23,7 +23,7 @@
           "title": "UGA Grenoble",
           "sub": "BUT GEII (2024-2027)",
           "desc": "Formation en automatismes, électronique embarquée et réseaux industriels.",
-          "image": "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80"
+          "image": "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=400&q=60"
         },
         {
           "id": "edu2",
@@ -69,14 +69,14 @@
           "title": "Robotique",
           "sub": "Suiveur de ligne",
           "desc": "Conception complète : électronique, mécanique et asservissement PID.",
-          "image": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80"
+          "image": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=400&q=60"
         },
         {
           "id": "pr2",
           "title": "Armoire Électrique",
           "sub": "Cellule 2024",
           "desc": "Étude et câblage d'une installation de puissance industrielle.",
-          "image": "https://images.unsplash.com/photo-1555664424-778a1e5e1b48?auto=format&fit=crop&w=800&q=80"
+          "image": "https://images.unsplash.com/photo-1555664424-778a1e5e1b48?auto=format&fit=crop&w=400&q=60"
         }
       ]
     },
@@ -89,7 +89,7 @@
           "title": "VTT Downhill",
           "sub": "Sport Engagé",
           "desc": "Pratique intensive privilégiant la technique et l'analyse du terrain.",
-          "image": "https://images.unsplash.com/photo-1544191133-7253b26c04f9?auto=format&fit=crop&w=800&q=80"
+          "image": "https://images.unsplash.com/photo-1544191133-7253b26c04f9?auto=format&fit=crop&w=400&q=60"
         },
         {
           "id": "h2",

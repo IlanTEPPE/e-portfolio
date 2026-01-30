@@ -375,34 +375,29 @@ const PongGame = ({ onClose, accentColor = "#00ff00", isClosing = false }) => {
   );
 };
 
-const Oscilloscope = ({ voltage = 0, accentColor = "#fbbf24", onClick }) => {
+const Oscilloscope = ({ temp = 32, accentColor = "#fbbf24", onClick }) => {
   const wavePath =
     "M0 25 Q 12.5 5, 25 25 T 50 25 T 75 25 T 100 25 T 125 25 T 150 25 T 175 25 T 200 25";
   
   const pathRef = useRef(null);
-  const distanceRef = useRef(0); // Distance parcourue (en pixels de dash)
+  const distanceRef = useRef(0);
   const animationSpeedRef = useRef(4);
   
-  // Fréquence en fonction de la tension (0-100 => 4s-0.5s)
-  const animationSpeed = 4 - (voltage / 100) * 3.5;
+  const animationSpeed = 4 - ((temp - 32) / 38) * 3.5;
   
-  // Mettre à jour la ref sans redémarrer l'animation
   useEffect(() => {
     animationSpeedRef.current = animationSpeed;
   }, [animationSpeed]);
   
-  // Animation continue qui ne s'arrête jamais
   useEffect(() => {
     let animationFrame;
     let lastTime = Date.now();
     
     const animate = () => {
       const now = Date.now();
-      const deltaTime = (now - lastTime) / 1000; // en secondes
+      const deltaTime = (now - lastTime) / 1000;
       lastTime = now;
       
-      // Accumule la distance en fonction de la vitesse actuelle
-      // stroke-dasharray = 200, on veut parcourir 200 pixels en animationSpeed secondes
       const deltaDistance = (deltaTime / animationSpeedRef.current) * 200;
       distanceRef.current += deltaDistance;
       
@@ -415,7 +410,7 @@ const Oscilloscope = ({ voltage = 0, accentColor = "#fbbf24", onClick }) => {
     
     animationFrame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationFrame);
-  }, []); // Dépendance vide : la boucle ne s'arrête jamais
+  }, []);
   
   return (
     <div 
@@ -605,18 +600,14 @@ const App = () => {
 
     const updateLed = () => {
       const now = Date.now();
-      const elapsed = (now - startTime) / 1000; // Temps en secondes
+      const elapsed = (now - startTime) / 1000;
 
-      if (voltage > 50) {
-        // Calcul de la fréquence : plus le voltage est haut, plus ça pulse vite
-        // On mappe 50-100% vers une fréquence de 1Hz à 8Hz
-        const frequency = (voltage - 50) * 0.15;
-
-        // Calcul de l'onde sinusoïdale (valeur entre 0 et 1)
+      if (temp > 40) {
+        const frequency = (temp - 40) * 0.08;
         const pulse = (Math.sin(elapsed * frequency * Math.PI * 2) + 1) / 2;
         setLedIntensity(pulse);
       } else {
-        setLedIntensity(0); // Éteinte sous 50%
+        setLedIntensity(0);
       }
 
       animationFrame = requestAnimationFrame(updateLed);
@@ -624,7 +615,7 @@ const App = () => {
 
     animationFrame = requestAnimationFrame(updateLed);
     return () => cancelAnimationFrame(animationFrame);
-  }, [voltage]); // On ne redémarre l'effet que si le voltage change, mais le temps continue de couler
+  }, [temp]);
 
   useEffect(() => {
     if (isBooting) {
@@ -673,16 +664,13 @@ const App = () => {
 
   const accentColor = getTrackColor(true); // Cette variable contient le Jaune -> Rouge dynamique basé sur la température
 
-  // Inertie de la température : elle s'approche progressivement de la cible
   useEffect(() => {
     const interval = setInterval(() => {
       setSeconds((s) => s + 1);
 
-      // La température s'approche progressivement de la cible (inertie)
       setTemp((prevTemp) => {
         const diff = targetTemp - prevTemp;
-        // Vitesse d'approche augmentée : jusqu'à 1.5°C par seconde max
-        const change = Math.max(-1.5, Math.min(1.5, diff * 0.2));
+        const change = Math.max(-1.5, Math.min(1.5, diff * 0.08));
         return parseFloat((prevTemp + change).toFixed(1));
       });
     }, 1000);
@@ -861,9 +849,17 @@ const App = () => {
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <span className="px-2 py-0.5 bg-emerald-950/50 border border-emerald-800 text-[7px] text-emerald-400 font-bold rounded-full uppercase tracking-widest italic">
+                <span className="px-3 py-1 bg-emerald-950/50 border border-emerald-800 text-[8px] md:text-[9px] text-emerald-400 font-bold rounded-full uppercase tracking-widest italic">
                   READY_FOR_PROJECTS
                 </span>
+                <a
+                  href="assets/CV.pdf"
+                  download
+                  className="px-3 py-1 bg-emerald-950/50 border border-emerald-600 text-[8px] md:text-[9px] text-emerald-400 font-bold rounded-full uppercase tracking-widest italic hover:bg-emerald-900/50 transition-all"
+                  title="Télécharger le CV"
+                >
+                  📥 DOWNLOAD_CV
+                </a>
               </div>
             </div>
             <div className="z-10 flex flex-col justify-end items-start md:items-end gap-1 text-[7px] md:text-[8px] text-emerald-800 font-bold font-mono border-l md:border-l-0 md:border-r border-emerald-900/40 pl-4 md:pl-0 md:pr-4">
@@ -1161,7 +1157,7 @@ const App = () => {
 
                   {/* ÉCRAN LCD ET LEDS */}
                   <g>
-                    {/* Boitier LCD (Positionné en haut à gauche) */}
+                    {/* Boitier LCD Temps (Positionné en haut à gauche) */}
                     <rect
                       x="1"
                       y="-5.5"
@@ -1180,7 +1176,35 @@ const App = () => {
                       {time}
                     </text>
 
-                    {/* LED Rouge : Dynamique selon VOLT (Vérifie bien que la classe est led-red-dynamic) */}
+                    {/* Boitier LCD Tension/Température (Nouveau - en haut à droite) */}
+                    <rect
+                      x="72"
+                      y="-5.5"
+                      width="28"
+                      height="12"
+                      rx="1"
+                      className="lcd-screen"
+                    />
+                    <text
+                      x="86"
+                      y="-0.5"
+                      textAnchor="middle"
+                      className="lcd-text"
+                      style={{ fontSize: "3px" }}
+                    >
+                      {calculatedVolt}V
+                    </text>
+                    <text
+                      x="86"
+                      y="4"
+                      textAnchor="middle"
+                      className="lcd-text"
+                      style={{ fontSize: "3px" }}
+                    >
+                      {temp.toFixed(1)}°C
+                    </text>
+
+                    {/* LED Rouge : Dynamique selon TEMPÉRATURE */}
                     <circle
                       cx="10"
                       cy="30"
@@ -1191,7 +1215,7 @@ const App = () => {
                           ledIntensity > 0.5
                             ? `drop-shadow(0 0 ${ledIntensity * 5}px #ff0000)`
                             : "none",
-                        transition: "fill 0.1s linear", // Adoucit légèrement le changement
+                        transition: "fill 0.1s linear",
                       }}
                     />
 
@@ -1323,7 +1347,7 @@ const App = () => {
                         </p>
                       </div>
                     </div>
-                    <Oscilloscope voltage={voltage} accentColor={accentColor} onClick={() => setShowPongGame(true)} />
+                    <Oscilloscope temp={temp} accentColor={accentColor} onClick={() => setShowPongGame(true)} />
                   </div>
 
                   <div className="space-y-6 relative z-10">
@@ -1518,6 +1542,7 @@ const App = () => {
                   src={modalItem.image}
                   alt={modalItem.title}
                   className="w-full h-full object-cover opacity-100"
+                  loading="lazy"
                 />
                 <div className="absolute inset-0 shadow-[inset_0_0_60px_rgba(0,0,0,0.6)] pointer-events-none"></div>
               </div>
