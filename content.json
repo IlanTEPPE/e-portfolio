@@ -1,0 +1,160 @@
+{
+  "bootSequence": [
+    "INITIALIZING_SYSTEM_CORE",
+    "CHECKING_VOLTAGE_RAILS",
+    "LOADING_GEII_KERNEL_V2.3",
+    "SCANNING_I2C_BUS",
+    "REGISTERING_USER_ILAN_TEPPE",
+    "STATUS_ALL_SYSTEMS_NOMINAL"
+  ],
+  "sections": {
+    "boot": {
+      "title": "Accueil",
+      "icon": "zap",
+      "content": "Système v2.3.9 prêt. Performance mobile optimisée. Sélectionnez une branche du circuit pour l'exploration des données."
+    },
+    "home": {
+      "title": "Profil",
+      "icon": "user",
+      "content": "Synthèse du parcours académique de l'unité Ilan Teppe.",
+      "details": [
+        {
+          "id": "edu1",
+          "title": "UGA Grenoble",
+          "sub": "BUT GEII (2024-2027)",
+          "desc": "Formation en automatismes, électronique embarquée et réseaux industriels.",
+          "image": "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80"
+        },
+        {
+          "id": "edu2",
+          "title": "Lycée Germaine Tillion",
+          "sub": "Baccalauréat Général",
+          "desc": "Spécialités : Maths, Physique, SI. Fondamentaux de l'ingénierie."
+        }
+      ]
+    },
+    "skills": {
+      "title": "Compétences",
+      "icon": "layers",
+      "details": [
+        {
+          "id": "sk1",
+          "title": "Développement",
+          "sub": "Python, C, VHDL",
+          "desc": "Création de firmware et scripts de traitement industriel.",
+          "icon": "code"
+        },
+        {
+          "id": "sk2",
+          "title": "CAO Électronique",
+          "sub": "KiCad & Routage",
+          "desc": "Conception de schémas et de circuits imprimés multicouches.",
+          "icon": "cpu"
+        },
+        {
+          "id": "sk3",
+          "title": "Industriel",
+          "sub": "API & B1V",
+          "desc": "Programmation d'automates Schneider/Siemens et sécurité électrique.",
+          "icon": "shield-check"
+        }
+      ]
+    },
+    "projects": {
+      "title": "Projets",
+      "icon": "book-open",
+      "details": [
+        {
+          "id": "pr1",
+          "title": "Robotique",
+          "sub": "Suiveur de ligne",
+          "desc": "Conception complète : électronique, mécanique et asservissement PID.",
+          "image": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80"
+        },
+        {
+          "id": "pr2",
+          "title": "Armoire Électrique",
+          "sub": "Cellule 2024",
+          "desc": "Étude et câblage d'une installation de puissance industrielle.",
+          "image": "https://images.unsplash.com/photo-1555664424-778a1e5e1b48?auto=format&fit=crop&w=800&q=80"
+        }
+      ]
+    },
+    "hobbies": {
+      "title": "Loisirs",
+      "icon": "hexagon",
+      "details": [
+        {
+          "id": "h1",
+          "title": "VTT Downhill",
+          "sub": "Sport Engagé",
+          "desc": "Pratique intensive privilégiant la technique et l'analyse du terrain.",
+          "image": "https://images.unsplash.com/photo-1544191133-7253b26c04f9?auto=format&fit=crop&w=800&q=80"
+        },
+        {
+          "id": "h2",
+          "title": "Ski Alpin",
+          "sub": "Hiver",
+          "desc": "Maîtrise technique et recherche de performance."
+        },
+        {
+          "id": "h3",
+          "title": "Gaming",
+          "sub": "League of Legends",
+          "desc": "Stratégie et coordination d'équipe sous pression."
+        }
+      ]
+    },
+    "contact": {
+      "title": "Contact",
+      "icon": "mail",
+      "info": {
+        "email": "ilan.teppe@gmail.com",
+        "tel": "07 69 31 62 67",
+        "location": "Grenoble, France",
+        "linkedin": "Ilan TEPPE"
+      }
+    }
+  },
+  "tracks": [
+    {
+      "id": "home",
+      "d": "M 50 15 L 50 35 L 20 65 L 20 79",
+      "len": 76,
+      "label": "PROFIL",
+      "x": 20,
+      "y": 85
+    },
+    {
+      "id": "skills",
+      "d": "M 50 15 L 50 35 L 80 65 L 80 79",
+      "len": 76,
+      "label": "COMPÉTENCES",
+      "x": 80,
+      "y": 85
+    },
+    {
+      "id": "projects",
+      "d": "M 50 15 L 50 101 L 46 105 L 24 131 L 20 135 L 20 149",
+      "len": 146,
+      "label": "PROJETS",
+      "x": 20,
+      "y": 155
+    },
+    {
+      "id": "hobbies",
+      "d": "M 50 15 L 50 101 L 54 105 L 76 131 L 80 135 L 80 149",
+      "len": 146,
+      "label": "LOISIRS",
+      "x": 80,
+      "y": 155
+    },
+    {
+      "id": "contact",
+      "d": "M 50 15 L 8 15 L 2 21 L 2 184 L 8 190 L 44 190",
+      "label": "CONTACT",
+      "x": 50,
+      "y": 190
+    }
+  ]
+}
