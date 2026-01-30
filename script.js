@@ -595,26 +595,13 @@ const App = () => {
   const [ledIntensity, setLedIntensity] = useState(0);
 
   useEffect(() => {
-    let animationFrame;
-    let startTime = Date.now();
-
-    const updateLed = () => {
-      const now = Date.now();
-      const elapsed = (now - startTime) / 1000;
-
-      if (temp > 40) {
-        const frequency = (temp - 40) * 0.08;
-        const pulse = (Math.sin(elapsed * frequency * Math.PI * 2) + 1) / 2;
-        setLedIntensity(pulse);
-      } else {
-        setLedIntensity(0);
-      }
-
-      animationFrame = requestAnimationFrame(updateLed);
-    };
-
-    animationFrame = requestAnimationFrame(updateLed);
-    return () => cancelAnimationFrame(animationFrame);
+    // LED intensité fixe basée sur la température
+    if (temp > 40) {
+      const intensity = Math.min(1, (temp - 40) / 30);
+      setLedIntensity(intensity);
+    } else {
+      setLedIntensity(0);
+    }
   }, [temp]);
 
   useEffect(() => {
@@ -662,6 +649,59 @@ const App = () => {
     return `rgb(${251 - tempRatio * 100}, ${191 - tempRatio * 150}, ${36 - tempRatio * 36})`;
   };
 
+  const getLcdVoltageColor = () => {
+    // Tension : 3.3V-5V vert, 5V-6V orange, 6V-6.7V rouge
+    const voltRatio = (calculatedVolt - 3.3) / 3.4; // 0 à 1
+    let r = 0, g = 150, b = 0;
+    
+    if (voltRatio < (5 - 3.3) / 3.4) {
+      // Vert (3.3V à 5V)
+      r = 0;
+      g = 150;
+      b = 0;
+    } else if (voltRatio < (6 - 3.3) / 3.4) {
+      // Vert à orange (5V à 6V)
+      const localRatio = (voltRatio - (5 - 3.3) / 3.4) / ((6 - 5) / 3.4);
+      r = localRatio * 200;
+      g = 150;
+      b = 0;
+    } else {
+      // Orange à rouge (6V à 6.7V)
+      const localRatio = (voltRatio - (6 - 3.3) / 3.4) / ((6.7 - 6) / 3.4);
+      r = 200 + localRatio * 55;
+      g = 150 * (1 - localRatio);
+      b = 0;
+    }
+
+    return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+  };
+
+  const getLcdTempColor = () => {
+    // Température : 30-40°C vert, 40-50°C orange, 50-60°C rouge
+    let r = 0, g = 150, b = 0;
+    
+    if (temp < 40) {
+      // Vert (30-40°C)
+      r = 0;
+      g = 150;
+      b = 0;
+    } else if (temp < 50) {
+      // Vert à orange (40-50°C)
+      const localRatio = (temp - 40) / 10;
+      r = localRatio * 200;
+      g = 150;
+      b = 0;
+    } else {
+      // Orange à rouge (50-60°C)
+      const localRatio = Math.min(1, (temp - 50) / 10);
+      r = 200 + localRatio * 55;
+      g = 150 * (1 - localRatio);
+      b = 0;
+    }
+
+    return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+  };
+
   const accentColor = getTrackColor(true); // Cette variable contient le Jaune -> Rouge dynamique basé sur la température
 
   useEffect(() => {
@@ -670,10 +710,10 @@ const App = () => {
 
       setTemp((prevTemp) => {
         const diff = targetTemp - prevTemp;
-        const change = Math.max(-1.5, Math.min(1.5, diff * 0.08));
-        return parseFloat((prevTemp + change).toFixed(1));
+        const change = Math.max(-0.3, Math.min(0.3, diff * 0.08));
+        return parseFloat((prevTemp + change).toFixed(2));
       });
-    }, 1000);
+    }, 100);
 
     return () => clearInterval(interval);
   }, [targetTemp]);
@@ -865,12 +905,7 @@ const App = () => {
             <div className="z-10 flex flex-col justify-end items-start md:items-end gap-1 text-[7px] md:text-[8px] text-emerald-800 font-bold font-mono border-l md:border-l-0 md:border-r border-emerald-900/40 pl-4 md:pl-0 md:pr-4">
               <span>COORD: 45.1885° N, 5.7245° E</span>
               <span>UPTIME: {formatUptime(seconds)}</span>
-              <span
-                style={{
-                  color: temp > 50 ? "#ff4444" : temp > 40 ? "#ffaa44" : "inherit",
-                  transition: "color 0.3s ease"
-                }}
-              >
+              <span>
                 TEMP: {temp.toFixed(1)}°C | VOLTAGE: {calculatedVolt}V
               </span>
               <span>KERNEL: GEII_OS_v2.3</span>
@@ -1190,7 +1225,7 @@ const App = () => {
                       y="-0.5"
                       textAnchor="middle"
                       className="lcd-text"
-                      style={{ fontSize: "3px" }}
+                      style={{ fontSize: "3px", fill: getLcdVoltageColor() }}
                     >
                       {calculatedVolt}V
                     </text>
@@ -1199,7 +1234,7 @@ const App = () => {
                       y="4"
                       textAnchor="middle"
                       className="lcd-text"
-                      style={{ fontSize: "3px" }}
+                      style={{ fontSize: "3px", fill: getLcdTempColor() }}
                     >
                       {temp.toFixed(1)}°C
                     </text>
@@ -1255,7 +1290,7 @@ const App = () => {
                   {/* GROUPE POTENTIOMÈTRES */}
                   <g>
                     {/* Potentiomètre Luminosité */}
-                    <foreignObject x="82" y="5" width="20" height="40">
+                    <foreignObject x="82" y="7" width="20" height="40">
                       <div className="w-full h-full flex items-center justify-center bg-transparent">
                         <input
                           type="range"
@@ -1277,7 +1312,7 @@ const App = () => {
                     </foreignObject>
                     <text
                       x="92"
-                      y="47"
+                      y="49"
                       textAnchor="middle"
                       className="pot-label"
                     >
@@ -1285,7 +1320,7 @@ const App = () => {
                     </text>
 
                     {/* Potentiomètre Voltage */}
-                    <foreignObject x="68" y="5" width="20" height="40">
+                    <foreignObject x="68" y="7" width="20" height="40">
                       <div className="w-full h-full flex items-center justify-center bg-transparent">
                         <input
                           type="range"
@@ -1305,7 +1340,7 @@ const App = () => {
                     </foreignObject>
                     <text
                       x="78"
-                      y="47"
+                      y="49"
                       textAnchor="middle"
                       className="pot-label"
                     >
