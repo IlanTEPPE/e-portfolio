@@ -20,26 +20,51 @@ const Icon = ({ name, size = 20, className = "", style = {} }) => {
   );
 };
 
-const PongGame = ({ onClose, accentColor = "#00ff00", isClosing = false }) => {
+const PongGame = ({ onClose, accentColor = "#00ff00", onGameStateChange }) => {
   const canvasRef = useRef(null);
-  const containerRef = useRef(null);
   const mouseYRef = useRef(0);
   const trailRef = useRef([]);
   const [gameStarted, setGameStarted] = useState(false);
-  const [localIsClosing, setLocalIsClosing] = useState(false);
-  
+  const [score, setScore] = useState(0);
+  const keysPressed = useRef({});
+
   useEffect(() => {
-    if (isClosing) {
-      setLocalIsClosing(true);
-    }
-  }, [isClosing]);
+    const handleKeyDown = (e) => {
+      keysPressed.current[e.key] = true;
+      if(["ArrowUp", "ArrowDown"].includes(e.key)) e.preventDefault();
+    };
+    const handleKeyUp = (e) => {
+      keysPressed.current[e.key] = false;
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleLockChange = () => {
+      if (document.pointerLockElement === null && gameStarted) {
+        setGameStarted(false);
+      }
+    };
+    document.addEventListener("pointerlockchange", handleLockChange);
+    return () => document.removeEventListener("pointerlockchange", handleLockChange);
+  }, [gameStarted]);
+
+  useEffect(() => {
+    if (onGameStateChange) onGameStateChange(gameStarted);
+  }, [gameStarted, onGameStateChange]);
+
   const [gameState, setGameState] = useState({
     playerY: 150,
     aiY: 150,
     ballX: 400,
     ballY: 150,
-    ballVelX: 1.5,
-    ballVelY: 1.5,
+    ballVelX: 1.2,
+    ballVelY: 0.5,
     playerScore: 0,
     aiScore: 0,
     gameOver: false,
@@ -50,8 +75,8 @@ const PongGame = ({ onClose, accentColor = "#00ff00", isClosing = false }) => {
     aiY: 150,
     ballX: 400,
     ballY: 150,
-    ballVelX: 1.5,
-    ballVelY: 1.5,
+    ballVelX: 1.2,
+    ballVelY: 0.5,
     playerScore: 0,
     aiScore: 0,
   });
@@ -59,22 +84,6 @@ const PongGame = ({ onClose, accentColor = "#00ff00", isClosing = false }) => {
   // Forcer le vert fluo (#00ff00)
   const pongColor = "#00ff00";
   const firstMoveRef = useRef(true);
-
-  useEffect(() => {
-    if (gameStarted) {
-      document.body.style.overflow = "hidden";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [gameStarted]);
-
-  useEffect(() => {
-    // Restaurer le scroll quand le composant se démonte
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, []);
 
   useEffect(() => {
     if (gameStarted) {
@@ -86,14 +95,19 @@ const PongGame = ({ onClose, accentColor = "#00ff00", isClosing = false }) => {
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (gameStarted && canvasRef.current) {
-        // Ignorer le premier mouvement après le démarrage
-        if (firstMoveRef.current) {
-          firstMoveRef.current = false;
-          return;
+        if (document.pointerLockElement === canvasRef.current) {
+          mouseYRef.current += e.movementY;
+          mouseYRef.current = Math.max(0, Math.min(300, mouseYRef.current));
+        } else {
+          // Ignorer le premier mouvement après le démarrage
+          if (firstMoveRef.current) {
+            firstMoveRef.current = false;
+            return;
+          }
+          
+          const rect = canvasRef.current.getBoundingClientRect();
+          mouseYRef.current = e.clientY - rect.top;
         }
-        
-        const rect = canvasRef.current.getBoundingClientRect();
-        mouseYRef.current = e.clientY - rect.top;
       }
     };
 
@@ -119,6 +133,16 @@ const PongGame = ({ onClose, accentColor = "#00ff00", isClosing = false }) => {
     let animationId;
 
     const update = () => {
+      // Contrôle Clavier
+      if (gameStarted) {
+        if (keysPressed.current["ArrowUp"]) {
+          mouseYRef.current = Math.max(0, mouseYRef.current - 2);
+        }
+        if (keysPressed.current["ArrowDown"]) {
+          mouseYRef.current = Math.min(CANVAS_HEIGHT, mouseYRef.current + 2);
+        }
+      }
+
       // Contrôle du joueur avec la souris
       const targetY = mouseYRef.current - PADDLE_HEIGHT / 2;
       params.playerY = Math.max(0, Math.min(CANVAS_HEIGHT - PADDLE_HEIGHT, targetY));
@@ -186,12 +210,14 @@ const PongGame = ({ onClose, accentColor = "#00ff00", isClosing = false }) => {
       // Balle sort du terrain
       if (params.ballX < 0) {
         params.aiScore++;
+        setScore(s => s - 50);
         params.ballX = CANVAS_WIDTH / 2;
         params.ballY = CANVAS_HEIGHT / 2;
         params.ballVelX = 1.5;
         params.ballVelY = 1;
       } else if (params.ballX > CANVAS_WIDTH) {
         params.playerScore++;
+        setScore(s => s + 50);
         params.ballX = CANVAS_WIDTH / 2;
         params.ballY = CANVAS_HEIGHT / 2;
         params.ballVelX = -1.5;
@@ -303,30 +329,24 @@ const PongGame = ({ onClose, accentColor = "#00ff00", isClosing = false }) => {
   }, [accentColor, gameStarted]);
 
   return (
-    <div
-      className="fixed inset-0 z-[101] modal-overlay flex items-center justify-center p-4 animate-in"
-      style={{ cursor: gameStarted ? "none" : "auto" }}
-      onClick={() => {
-        setLocalIsClosing(true);
-        setTimeout(onClose, 300);
-      }}
-    >
-      <div
-        ref={containerRef}
-        className={`relative w-full max-w-4xl rounded-3xl overflow-hidden border-2 ${localIsClosing ? "animate-modal-close" : "animate-modal-content"}`}
-        style={{ borderColor: "#00ff00", backgroundColor: "#000000" }}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="w-full flex flex-col bg-black" style={{ cursor: gameStarted ? "none" : "auto" }}>
         {/* Header CRT */}
         <div
-          className="px-6 py-2 font-bold text-xs tracking-widest uppercase"
+          className="px-6 py-2 font-bold text-xs tracking-widest uppercase flex justify-between"
           style={{ backgroundColor: "#000000", color: "#00ff00", borderBottom: `2px solid #00ff00` }}
         >
-          PONG_OSCILLOSCOPE_V1.0
+          <span>PONG_OSCILLOSCOPE_V1.0</span>
+          <span>SCORE: {score}</span>
         </div>
 
         {/* Canvas */}
-        <div className="relative w-full" style={{ position: "relative" }}>
+        <div 
+          className="relative w-full" 
+          style={{ position: "relative", aspectRatio: "800/300" }}
+          onClick={() => {
+            if (gameStarted) canvasRef.current?.requestPointerLock();
+          }}
+        >
           <canvas
             ref={canvasRef}
             width={800}
@@ -338,15 +358,18 @@ const PongGame = ({ onClose, accentColor = "#00ff00", isClosing = false }) => {
           {/* Écran de lancement */}
           {!gameStarted && (
             <div
-              className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm"
-              style={{ backgroundColor: "rgba(0, 0, 0, 0.75)" }}
+              className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10"
+              style={{ backgroundColor: "#000000" }}
             >
               <div className="text-center">
                 <div className="text-4xl font-bold mb-6" style={{ color: "#00ff00", textShadow: "0 0 20px #00ff00" }}>
                   PONG
                 </div>
                 <button
-                  onClick={() => setGameStarted(true)}
+                  onClick={() => {
+                    setGameStarted(true);
+                    canvasRef.current?.requestPointerLock();
+                  }}
                   className="px-8 py-3 font-bold text-lg border-2 rounded-lg hover:opacity-75 transition-all"
                   style={{
                     color: "#00ff00",
@@ -368,9 +391,818 @@ const PongGame = ({ onClose, accentColor = "#00ff00", isClosing = false }) => {
           className="px-6 py-3 text-xs font-mono text-center"
           style={{ backgroundColor: "#000000", color: "#00ff00", borderTop: `2px solid #00ff00` }}
         >
-          <p className="text-sm">Déplacez la souris pour contrôler | ESC pour quitter</p>
+          <p className="text-sm">SOURIS ou FLÈCHES pour contrôler | ESC pour quitter</p>
         </div>
-      </div>
+    </div>
+  );
+};
+
+const SnakeGame = ({ onClose, accentColor, onGameStateChange }) => {
+  const canvasRef = useRef(null);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
+  const [score, setScore] = useState(0);
+  const [controlMode, setControlMode] = useState("ZQSD"); // "ZQSD" ou "WASD"
+
+  // Refs pour la logique de jeu (évite les re-renders)
+  const snakeRef = useRef([]);
+  const prevSnakeRef = useRef([]);
+  const directionRef = useRef({ x: 1, y: 0 });
+  const directionQueueRef = useRef([]); // Buffer pour les inputs
+  const foodRef = useRef({ x: 0, y: 0 });
+  const isDyingRef = useRef(false);
+  const isEatingRef = useRef(false);
+  const eatenFoodRef = useRef({ x: 0, y: 0 });
+  const lastUpdateRef = useRef(0);
+  const animationRef = useRef(null);
+
+  // Constantes
+  const GRID_SIZE = 40;
+  const CANVAS_WIDTH = 800;
+  const CANVAS_HEIGHT = 300;
+  const COLS = Math.floor(CANVAS_WIDTH / GRID_SIZE);
+  const ROWS = Math.floor(CANVAS_HEIGHT / GRID_SIZE);
+  const OFFSET_Y = (CANVAS_HEIGHT - ROWS * GRID_SIZE) / 2;
+  const SPEED = 150; // ms entre chaque mouvement
+
+  // Initialisation
+  const initGame = () => {
+    snakeRef.current = [
+      { x: 5, y: 3 },
+      { x: 4, y: 3 },
+      { x: 3, y: 3 },
+    ];
+    prevSnakeRef.current = [...snakeRef.current];
+    directionRef.current = { x: 1, y: 0 };
+    directionQueueRef.current = []; // Reset buffer
+    isDyingRef.current = false;
+    isEatingRef.current = false;
+    spawnFood();
+    setScore(0);
+    setGameOver(false);
+    setGameStarted(true);
+    lastUpdateRef.current = performance.now();
+  };
+
+  const spawnFood = () => {
+    let newFood;
+    let isOnSnake;
+    do {
+      newFood = {
+        x: Math.floor(Math.random() * COLS),
+        y: Math.floor(Math.random() * ROWS),
+      };
+      isOnSnake = snakeRef.current.some(
+        (segment) => segment.x === newFood.x && segment.y === newFood.y
+      );
+    } while (isOnSnake);
+    foodRef.current = newFood;
+  };
+
+  useEffect(() => {
+    if (onGameStateChange) onGameStateChange(gameStarted);
+  }, [gameStarted, onGameStateChange]);
+
+  // Gestion des contrôles
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Empêcher le scroll par défaut avec les flèches
+      if(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key) || 
+         ["z", "q", "s", "d", "w", "a"].includes(e.key.toLowerCase())) {
+        e.preventDefault();
+      }
+
+      if (e.key === "Escape") {
+        if (gameStarted) {
+            setGameStarted(false);
+        }
+        return;
+      }
+
+      const key = e.key.toLowerCase();
+      let newDir = null;
+
+      // Mapping des touches selon le mode
+      const upKeys = controlMode === "ZQSD" ? ["arrowup", "z"] : ["arrowup", "w"];
+      const leftKeys = controlMode === "ZQSD" ? ["arrowleft", "q"] : ["arrowleft", "a"];
+      const downKeys = controlMode === "ZQSD" ? ["arrowdown", "s"] : ["arrowdown", "s"];
+      const rightKeys = controlMode === "ZQSD" ? ["arrowright", "d"] : ["arrowright", "d"];
+
+      if (upKeys.includes(key)) newDir = { x: 0, y: -1 };
+      else if (downKeys.includes(key)) newDir = { x: 0, y: 1 };
+      else if (leftKeys.includes(key)) newDir = { x: -1, y: 0 };
+      else if (rightKeys.includes(key)) newDir = { x: 1, y: 0 };
+
+      // Démarrage rapide avec une touche de direction
+      if (!gameStarted && newDir) {
+        initGame();
+        return;
+      }
+
+      if (!gameStarted || !newDir) return;
+      
+      // Logique du Buffer : on regarde la dernière direction planifiée
+      const lastScheduledDir = directionQueueRef.current.length > 0 
+        ? directionQueueRef.current[directionQueueRef.current.length - 1] 
+        : directionRef.current;
+
+      // Empêcher le demi-tour immédiat sur la dernière direction planifiée
+      if (newDir.x !== -lastScheduledDir.x || newDir.y !== -lastScheduledDir.y) {
+        // On évite aussi d'empiler la même direction inutilement
+        if (newDir.x !== lastScheduledDir.x || newDir.y !== lastScheduledDir.y) {
+             // Limite la taille du buffer à 2 pour éviter trop de latence si on bourrine
+            if (directionQueueRef.current.length < 2) {
+                directionQueueRef.current.push(newDir);
+            }
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [gameStarted, controlMode]);
+
+  // Boucle de jeu
+  useEffect(() => {
+    if (!gameStarted || gameOver) {
+        if (animationRef.current) cancelAnimationFrame(animationRef.current);
+        return;
+    }
+
+    const loop = (timestamp) => {
+      if (!isDyingRef.current && timestamp - lastUpdateRef.current > SPEED) {
+        update();
+        lastUpdateRef.current = timestamp;
+      }
+      draw(timestamp);
+      animationRef.current = requestAnimationFrame(loop);
+    };
+
+    animationRef.current = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animationRef.current);
+  }, [gameStarted, gameOver]);
+
+  const update = () => {
+    if (isDyingRef.current) return;
+
+    prevSnakeRef.current = [...snakeRef.current];
+    // Consommer le buffer
+    if (directionQueueRef.current.length > 0) {
+        directionRef.current = directionQueueRef.current.shift();
+    }
+
+    const head = { ...snakeRef.current[0] };
+    head.x += directionRef.current.x;
+    head.y += directionRef.current.y;
+
+    // Collision Murs
+    if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) {
+      isDyingRef.current = true;
+      snakeRef.current.unshift(head);
+      snakeRef.current.pop();
+      return;
+    }
+
+    // Collision Soi-même
+    // On exclut la queue car elle va bouger (sauf si on mange, mais la nourriture n'est pas sur le corps)
+    if (snakeRef.current.slice(0, -1).some((segment) => segment.x === head.x && segment.y === head.y)) {
+      isDyingRef.current = true;
+      snakeRef.current.unshift(head);
+      snakeRef.current.pop();
+      return;
+    }
+
+    snakeRef.current.unshift(head);
+
+    // Manger la nourriture
+    if (head.x === foodRef.current.x && head.y === foodRef.current.y) {
+      isEatingRef.current = true;
+      eatenFoodRef.current = { ...foodRef.current };
+      setScore((s) => s + 10);
+      spawnFood();
+      // Pas de pop(), le serpent grandit
+    } else {
+      isEatingRef.current = false;
+      snakeRef.current.pop();
+    }
+  };
+
+  const draw = (timestamp = performance.now()) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const progress = Math.min((timestamp - lastUpdateRef.current) / SPEED, 1);
+
+    if (isDyingRef.current && progress >= 1) {
+      setGameOver(true);
+      return;
+    }
+
+    // Fond
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    ctx.save();
+    ctx.translate(0, OFFSET_Y);
+
+    // Grille
+    ctx.strokeStyle = "#003300";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = 0; x <= CANVAS_WIDTH; x += GRID_SIZE) {
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, ROWS * GRID_SIZE);
+    }
+    for (let y = 0; y <= ROWS * GRID_SIZE; y += GRID_SIZE) {
+      ctx.moveTo(0, y);
+      ctx.lineTo(CANVAS_WIDTH, y);
+    }
+    ctx.stroke();
+
+    // Serpent (Style Signal avec interpolation)
+    ctx.strokeStyle = accentColor;
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = accentColor;
+    
+    // Dessin du serpent avec angles droits (Logique Grid-Based)
+    ctx.beginPath();
+    if (snakeRef.current.length > 0) {
+        const snake = snakeRef.current;
+        const prevSnake = prevSnakeRef.current;
+        const didEat = snake.length > prevSnake.length;
+
+        // 1. Tête interpolée (Extension fluide)
+        let headX, headY;
+        if (snake.length > 1) {
+             const p1 = snake[1]; // Ancienne tête
+             const p0 = snake[0]; // Nouvelle tête
+             headX = p1.x + (p0.x - p1.x) * progress;
+             headY = p1.y + (p0.y - p1.y) * progress;
+        } else {
+             headX = snake[0].x;
+             headY = snake[0].y;
+        }
+        
+        ctx.moveTo(headX * GRID_SIZE + GRID_SIZE/2, headY * GRID_SIZE + GRID_SIZE/2);
+        
+        // 2. Corps statique (Angles droits parfaits sur la grille)
+        for (let i = 1; i < snake.length; i++) {
+            ctx.lineTo(snake[i].x * GRID_SIZE + GRID_SIZE/2, snake[i].y * GRID_SIZE + GRID_SIZE/2);
+        }
+        
+        // 3. Queue interpolée (Rétraction fluide)
+        if (!didEat && prevSnake.length > 0) {
+            const currentTail = snake[snake.length - 1];
+            const oldTail = prevSnake[prevSnake.length - 1];
+            
+            const tailX = oldTail.x + (currentTail.x - oldTail.x) * progress;
+            const tailY = oldTail.y + (currentTail.y - oldTail.y) * progress;
+            
+            ctx.lineTo(tailX * GRID_SIZE + GRID_SIZE/2, tailY * GRID_SIZE + GRID_SIZE/2);
+        }
+    }
+    ctx.stroke();
+    
+    // Tête (Point brillant) - Suit la position interpolée calculée plus haut
+    if (snakeRef.current.length > 0) {
+        // Recalcul rapide pour le point blanc
+        let hX, hY;
+        if (snakeRef.current.length > 1) {
+             const p1 = snakeRef.current[1];
+             const p0 = snakeRef.current[0];
+             hX = p1.x + (p0.x - p1.x) * progress;
+             hY = p1.y + (p0.y - p1.y) * progress;
+        } else {
+             hX = snakeRef.current[0].x;
+             hY = snakeRef.current[0].y;
+        }
+        
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(hX * GRID_SIZE + GRID_SIZE/2, hY * GRID_SIZE + GRID_SIZE/2, 12, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Nourriture mangée (reste affichée pendant la transition)
+    if (isEatingRef.current) {
+        const ex = eatenFoodRef.current.x * GRID_SIZE + GRID_SIZE / 2;
+        const ey = eatenFoodRef.current.y * GRID_SIZE + GRID_SIZE / 2;
+        
+        ctx.fillStyle = accentColor;
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.moveTo(ex, ey - 12);
+        ctx.lineTo(ex + 12, ey);
+        ctx.lineTo(ex, ey + 12);
+        ctx.lineTo(ex - 12, ey);
+        ctx.closePath();
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+
+    // Nourriture (Glitch)
+    if (!isEatingRef.current) {
+      const foodX = foodRef.current.x * GRID_SIZE + GRID_SIZE / 2;
+      const foodY = foodRef.current.y * GRID_SIZE + GRID_SIZE / 2;
+      
+      ctx.fillStyle = accentColor;
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      // Forme de losange pour le glitch
+      ctx.moveTo(foodX, foodY - 12);
+      ctx.lineTo(foodX + 12, foodY);
+      ctx.lineTo(foodX, foodY + 12);
+      ctx.lineTo(foodX - 12, foodY);
+      ctx.closePath();
+      ctx.fill();
+      
+      ctx.shadowBlur = 0;
+    }
+    ctx.restore();
+  };
+
+  // Rendu initial (écran titre ou game over)
+  useEffect(() => {
+    if (!gameStarted || gameOver) {
+        draw(); // Dessiner au moins une frame (grille etc)
+    }
+  }, [gameStarted, gameOver]);
+
+  return (
+    <div className="w-full flex flex-col bg-black h-full">
+        <div
+          className="px-6 py-2 font-bold text-xs tracking-widest uppercase flex justify-between"
+          style={{ backgroundColor: "#000000", color: accentColor, borderBottom: `2px solid ${accentColor}` }}
+        >
+          <span>SNAKE_SIGNAL_V1.0</span>
+          <span>SCORE: {score}</span>
+        </div>
+        <div className="relative w-full" style={{ position: "relative", aspectRatio: "800/300" }}>
+            <canvas
+                ref={canvasRef}
+                width={CANVAS_WIDTH}
+                height={CANVAS_HEIGHT}
+                className="block w-full"
+                style={{ backgroundColor: "#000000", display: "block" }}
+            />
+            
+            {/* Overlay Start / Game Over */}
+            {(!gameStarted || gameOver) && (
+                <div 
+                  className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10"
+                  style={{ backgroundColor: "#000000" }}
+                >
+                    <div className="text-center">
+                        <div className="text-4xl font-bold mb-6" style={{ color: accentColor, textShadow: `0 0 20px ${accentColor}` }}>
+                            {gameOver ? "SIGNAL LOST" : "SNAKE"}
+                        </div>
+                        {gameOver && <div className="text-white mb-6 font-mono">SCORE FINAL: {score}</div>}
+                        
+                        <button
+                            onClick={initGame}
+                            className="px-8 py-3 font-bold text-lg border-2 rounded-lg hover:opacity-75 transition-all"
+                            style={{ 
+                              color: accentColor, 
+                              borderColor: accentColor,
+                              backgroundColor: "transparent",
+                              textShadow: `0 0 10px ${accentColor}`,
+                              boxShadow: `0 0 20px ${accentColor}40`,
+                            }}
+                        >
+                            {gameOver ? "RETRY_CONNECTION" : "▶ JOUER"}
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+        <div
+          className="relative px-6 py-3 text-xs font-mono text-center"
+          style={{ backgroundColor: "#000000", color: accentColor, borderTop: `2px solid ${accentColor}` }}
+        >
+          <p className="text-sm">FLÈCHES ou {controlMode} pour contrôler | ESC pour quitter</p>
+          <button 
+            onClick={() => setControlMode(m => m === "ZQSD" ? "WASD" : "ZQSD")}
+            className="absolute right-6 top-1/2 -translate-y-1/2 px-2 py-1 border rounded hover:bg-white/10 transition-colors text-[10px] font-bold"
+            style={{ borderColor: accentColor, color: accentColor }}
+          >
+            MODE: {controlMode}
+          </button>
+        </div>
+    </div>
+  );
+};
+
+const LunarLanderGame = ({ onClose, accentColor, onGameStateChange }) => {
+  const canvasRef = useRef(null);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
+  const [victory, setVictory] = useState(false);
+  const [score, setScore] = useState(0);
+
+  const landerRef = useRef({
+    x: 400, y: 50,
+    vx: 0, vy: 0,
+    angle: -Math.PI / 2, // Pointe vers le haut (-90deg)
+    thrusting: false
+  });
+  const keysRef = useRef({});
+  const terrainRef = useRef([]);
+  const padRef = useRef({ x: 0, width: 0, y: 0 });
+  const particlesRef = useRef([]);
+  const fuelRef = useRef(100);
+  const animationRef = useRef(null);
+
+  const CANVAS_WIDTH = 800;
+  const CANVAS_HEIGHT = 300;
+  const GRAVITY = 0.02;
+  const THRUST_POWER = 0.04;
+  const ROTATION_SPEED = 0.02;
+
+  useEffect(() => {
+    if (onGameStateChange) onGameStateChange(gameStarted);
+  }, [gameStarted, onGameStateChange]);
+
+  const initGame = (keepScore = false) => {
+    const points = [];
+    const segments = 60;
+    const segmentWidth = CANVAS_WIDTH / segments;
+    let padSegment = Math.floor(Math.random() * (segments - 25)) + 15;
+    
+    const baseHeight = CANVAS_HEIGHT - 20;
+
+    for (let i = 0; i <= segments; i++) {
+        let h;
+        if (i >= padSegment && i <= padSegment + 4) {
+            h = baseHeight - 50; 
+        } else {
+            const noise = Math.sin(i * 0.3) * 30 + Math.sin(i * 0.8) * 15 + Math.random() * 10;
+            h = baseHeight - 30 - noise;
+        }
+        points.push({ x: i * segmentWidth, y: h });
+    }
+    
+    const padY = points[padSegment].y;
+    for(let i = 0; i <= 4; i++) {
+        points[padSegment + i].y = padY;
+    }
+
+    terrainRef.current = points;
+    padRef.current = {
+        x: points[padSegment].x,
+        width: segmentWidth * 4,
+        y: padY
+    };
+    
+    landerRef.current = {
+        x: 50, y: 50,
+        vx: 0.5, vy: 0,
+        angle: -Math.PI / 2,
+        thrusting: false
+    };
+    
+    particlesRef.current = [];
+    fuelRef.current = 100;
+    setVictory(false);
+    setGameOver(false);
+    setGameStarted(true);
+    if (!keepScore) setScore(0);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+        e.preventDefault();
+      }
+      keysRef.current[e.key] = true;
+
+      if (e.key === "Escape") {
+        if (gameStarted) setGameStarted(false);
+      }
+      
+      if (!gameStarted && ["ArrowUp", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+        initGame(victory);
+      }
+    };
+    
+    const handleKeyUp = (e) => {
+      keysRef.current[e.key] = false;
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [gameStarted, victory]);
+
+  useEffect(() => {
+    if (!gameStarted || gameOver || victory) {
+        if (animationRef.current) cancelAnimationFrame(animationRef.current);
+        if (canvasRef.current) draw();
+        return;
+    }
+
+    const loop = () => {
+        update();
+        draw();
+        animationRef.current = requestAnimationFrame(loop);
+    };
+    animationRef.current = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animationRef.current);
+  }, [gameStarted, gameOver, victory]);
+
+  const update = () => {
+    const lander = landerRef.current;
+    
+    lander.thrusting = (keysRef.current["ArrowUp"] || keysRef.current[" "]) && fuelRef.current > 0;
+
+    if (lander.thrusting) {
+        lander.vx += Math.cos(lander.angle) * THRUST_POWER;
+        lander.vy += Math.sin(lander.angle) * THRUST_POWER;
+        fuelRef.current = Math.max(0, fuelRef.current - (0.2 / 1.5));
+        
+        for(let i=0; i<3; i++) {
+            particlesRef.current.push({
+                x: lander.x - Math.cos(lander.angle) * 8,
+                y: lander.y - Math.sin(lander.angle) * 8,
+                vx: lander.vx - Math.cos(lander.angle) * 3 + (Math.random()-0.5),
+                vy: lander.vy - Math.sin(lander.angle) * 3 + (Math.random()-0.5),
+                life: 1.0
+            });
+        }
+    }
+
+    lander.vy += GRAVITY;
+    lander.x += lander.vx;
+    lander.y += lander.vy;
+
+    particlesRef.current.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.05;
+    });
+    particlesRef.current = particlesRef.current.filter(p => p.life > 0);
+
+    if (lander.x < 0 || lander.x > CANVAS_WIDTH || lander.y < 0) {
+        setGameOver(true);
+    }
+
+    const segmentCount = terrainRef.current.length - 1;
+    const segmentW = CANVAS_WIDTH / segmentCount;
+    const idx = Math.floor(lander.x / segmentW);
+    
+    if (idx >= 0 && idx < segmentCount) {
+        const p1 = terrainRef.current[idx];
+        const p2 = terrainRef.current[idx+1];
+        const ratio = (lander.x - p1.x) / segmentW;
+        const groundY = p1.y + (p2.y - p1.y) * ratio;
+        
+        if (lander.y + 6 >= groundY) {
+            const isOnPad = lander.x >= padRef.current.x && lander.x <= padRef.current.x + padRef.current.width;
+            const isSlow = Math.abs(lander.vy) < 2.5 && Math.abs(lander.vx) < 2.5;
+            
+            let normAngle = Math.atan2(Math.sin(lander.angle), Math.cos(lander.angle));
+            const isUpright = Math.abs(normAngle - (-Math.PI/2)) < 0.5;
+            
+            if (isOnPad && isSlow && isUpright) {
+                setVictory(true);
+                setScore(s => s + 100 + Math.floor(fuelRef.current));
+            } else {
+                setGameOver(true);
+            }
+        }
+    }
+  };
+
+  const draw = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const lander = landerRef.current;
+
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    // Terrain
+    ctx.strokeStyle = accentColor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    if (terrainRef.current.length > 0) {
+        ctx.moveTo(terrainRef.current[0].x, terrainRef.current[0].y);
+        for (let i = 1; i < terrainRef.current.length; i++) {
+            ctx.lineTo(terrainRef.current[i].x, terrainRef.current[i].y);
+        }
+    }
+    ctx.stroke();
+    
+    // Pad Highlight
+    if (padRef.current.width > 0) {
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(padRef.current.x, padRef.current.y);
+        ctx.lineTo(padRef.current.x + padRef.current.width, padRef.current.y);
+        ctx.stroke();
+        
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "10px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("LZ", padRef.current.x + padRef.current.width/2, padRef.current.y + 15);
+    }
+
+    // Lander
+    ctx.save();
+    ctx.translate(lander.x, lander.y);
+    ctx.rotate(lander.angle);
+    
+    ctx.strokeStyle = accentColor;
+    ctx.lineWidth = 2;
+    ctx.fillStyle = "#000000";
+    
+    // Triangle shape
+    ctx.beginPath();
+    ctx.moveTo(10, 0); // Nose
+    ctx.lineTo(-8, 6);
+    ctx.lineTo(-4, 0); // Engine recess
+    ctx.lineTo(-8, -6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    
+    // Flame
+    if (lander.thrusting) {
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(-6, 0);
+        ctx.lineTo(-15 - Math.random()*10, 0);
+        ctx.lineTo(-6, 2);
+        ctx.fill();
+    }
+    
+    ctx.restore();
+
+    // Particles
+    particlesRef.current.forEach(p => {
+        ctx.fillStyle = `rgba(255, 255, 255, ${p.life})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 1, 0, Math.PI*2);
+        ctx.fill();
+    });
+    
+    // HUD
+    ctx.fillStyle = accentColor;
+    ctx.font = "10px monospace";
+    ctx.textAlign = "left";
+    ctx.fillText(`FUEL: ${Math.floor(fuelRef.current)}%`, 10, 20);
+    ctx.fillText(`ALT: ${Math.max(0, Math.floor(CANVAS_HEIGHT - lander.y - 20))}`, 10, 35);
+    ctx.fillText(`VX: ${lander.vx.toFixed(1)}`, 10, 50);
+    ctx.fillText(`VY: ${lander.vy.toFixed(1)}`, 10, 65);
+  };
+
+  return (
+    <div className="w-full flex flex-col bg-black h-full">
+        <div
+          className="px-6 py-2 font-bold text-xs tracking-widest uppercase flex justify-between"
+          style={{ backgroundColor: "#000000", color: accentColor, borderBottom: `2px solid ${accentColor}` }}
+        >
+          <span>LUNAR_LANDER_V0.5</span>
+          <span>SCORE: {score}</span>
+        </div>
+        <div className="relative w-full bg-black flex flex-col items-center justify-center" style={{ aspectRatio: "800/300" }}>
+            <canvas
+                ref={canvasRef}
+                width={CANVAS_WIDTH}
+                height={CANVAS_HEIGHT}
+                className="block w-full"
+                style={{ backgroundColor: "#000000", display: "block" }}
+            />
+            
+            {/* Overlay Start / Game Over */}
+            {(!gameStarted || gameOver || victory) && (
+                <div 
+                  className="absolute inset-0 flex flex-col items-center justify-center bg-black z-10"
+                  style={{ backgroundColor: "#000000" }}
+                >
+                    <div className="text-center">
+                        <div className="text-4xl font-bold mb-6" style={{ color: accentColor, textShadow: `0 0 20px ${accentColor}` }}>
+                            {victory ? "LANDING SUCCESS" : (gameOver ? "CRITICAL FAILURE" : "LUNAR LANDER")}
+                        </div>
+                        {(gameOver || victory) && <div className="text-white mb-6 font-mono">SCORE: {score}</div>}
+                        
+                        <button
+                            onClick={() => initGame(victory)}
+                            className="px-8 py-3 font-bold text-lg border-2 rounded-lg hover:opacity-75 transition-all"
+                            style={{ 
+                              color: accentColor, 
+                              borderColor: accentColor,
+                              backgroundColor: "transparent",
+                              textShadow: `0 0 10px ${accentColor}`,
+                              boxShadow: `0 0 20px ${accentColor}40`,
+                            }}
+                        >
+                            {victory ? "CONTINUE" : (gameOver ? "RETRY" : "▶ JOUER")}
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+        <div
+          className="px-6 py-3 text-xs font-mono text-center"
+          style={{ backgroundColor: "#000000", color: accentColor, borderTop: `2px solid ${accentColor}` }}
+        >
+          <p className="text-sm">HAUT ou ESPACE pour propulser | ESC pour quitter</p>
+        </div>
+    </div>
+  );
+};
+
+const ArcadeModal = ({ onClose, accentColor = "#00ff00" }) => {
+  const [gameIndex, setGameIndex] = useState(0);
+  const [gameActive, setGameActive] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(onClose, 300);
+  };
+
+  // Gestion du scroll global pour la modale Arcade
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
+  // Navigation au clavier
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (gameActive) return; // On ne change pas de jeu si une partie est en cours
+      
+      if (e.key === "ArrowLeft") prevGame(e);
+      if (e.key === "ArrowRight") nextGame(e);
+      if (e.key === "Escape") handleClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [gameActive, onClose, gameIndex]); // Dépendances mises à jour
+
+  const games = [
+    { id: 'pong', component: PongGame },
+    { id: 'snake', component: SnakeGame },
+    { id: 'lunar', component: LunarLanderGame },
+  ];
+
+  const CurrentGame = games[gameIndex].component;
+
+  const nextGame = (e) => { 
+    if (e) e.stopPropagation();
+    setGameActive(false);
+    setGameIndex((prev) => (prev + 1) % games.length);
+  };
+  
+  const prevGame = (e) => {
+    if (e) e.stopPropagation();
+    setGameActive(false);
+    setGameIndex((prev) => (prev - 1 + games.length) % games.length);
+  };
+
+  return (
+    <div 
+        className="fixed inset-0 z-[101] modal-overlay flex items-center justify-center p-4"
+        onClick={handleClose}
+    >
+        <div className={`relative w-full max-w-5xl flex items-center justify-center gap-4 md:gap-8 ${isClosing ? "animate-modal-close" : "animate-modal-content"}`}>
+            {!gameActive && (
+                <button 
+                    onClick={prevGame} 
+                    className="p-2 text-emerald-500 hover:text-yellow-400 transition-colors z-20 bg-transparent rounded-full"
+                    style={{ filter: "drop-shadow(0 0 8px rgba(16, 185, 129, 0.8))" }}
+                >
+                    <Icon name="chevron-left" size={48} />
+                </button>
+            )}
+
+            <div
+                className="relative w-full max-w-4xl rounded-3xl overflow-hidden border-2 shadow-2xl"
+                style={{ borderColor: accentColor, backgroundColor: "#000000", boxShadow: `0 0 30px ${accentColor}20` }}
+                onClick={(e) => e.stopPropagation()}
+            >
+                <CurrentGame onClose={handleClose} accentColor={accentColor} onGameStateChange={setGameActive} />
+            </div>
+
+            {!gameActive && (
+                <button 
+                    onClick={nextGame} 
+                    className="p-2 text-emerald-500 hover:text-yellow-400 transition-colors z-20 bg-transparent rounded-full"
+                    style={{ filter: "drop-shadow(0 0 8px rgba(16, 185, 129, 0.8))" }}
+                >
+                    <Icon name="chevron-right" size={48} />
+                </button>
+            )}
+        </div>
     </div>
   );
 };
@@ -570,7 +1402,6 @@ const App = () => {
   const [modalItem, setModalItem] = useState(null);
   const [isClosingModal, setIsClosingModal] = useState(false);
   const [showPongGame, setShowPongGame] = useState(false);
-  const [closingPong, setClosingPong] = useState(false);
   const contentRef = useRef(null);
 
   const [brightness, setBrightness] = useState(15);
@@ -605,10 +1436,10 @@ const App = () => {
   }, [temp]);
 
   useEffect(() => {
-    if (isBooting) {
+    if (isBooting || modalItem) {
       document.body.style.overflow = "hidden";
       // On s'assure de remonter en haut de page au cas où
-      window.scrollTo(0, 0);
+      if (isBooting) window.scrollTo(0, 0);
     } else {
       document.body.style.overflow = "auto";
     }
@@ -617,27 +1448,23 @@ const App = () => {
     return () => {
       document.body.style.overflow = "auto";
     };
-  }, [isBooting]);
+  }, [isBooting, modalItem]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape" && showPongGame) {
-        setClosingPong(true);
-        setTimeout(() => {
-          setShowPongGame(false);
-          setClosingPong(false);
-        }, 300);
+        // La fermeture est gérée par le composant ArcadeModal via pointerLock ou bouton
       }
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown); // Le listener est maintenant dans ArcadeModal/PongGame
   }, [showPongGame]);
 
   useEffect(() => {
-    const timer = setInterval(
-      () => setTime(new Date().toLocaleTimeString()),
-      1000,
-    );
+    const timer = setInterval(() => {
+      setTime(new Date().toLocaleTimeString());
+      setSeconds((s) => s + 1);
+    }, 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -706,8 +1533,6 @@ const App = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setSeconds((s) => s + 1);
-
       setTemp((prevTemp) => {
         const diff = targetTemp - prevTemp;
         const change = Math.max(-0.3, Math.min(0.3, diff * 0.08));
@@ -1588,7 +2413,7 @@ const App = () => {
 
       {/* Jeu Pong Easter Egg */}
       {showPongGame && (
-        <PongGame onClose={() => setShowPongGame(false)} accentColor={accentColor} isClosing={closingPong} />
+        <ArcadeModal onClose={() => setShowPongGame(false)} accentColor="#00ff00" />
       )}
     </>
   );
