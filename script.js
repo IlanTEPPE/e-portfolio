@@ -892,15 +892,24 @@ const LunarLanderGame = ({ accentColor, onGameStateChange, controlMode, setContr
         points.push({ x: i * segmentWidth, y: h });
     }
     
+    // Calcul de la taille de la plateforme selon le score
+    // Départ : 6 segments (plus grand). Fin : 1.6 segments (2.5x plus petit que 4).
+    const currentScore = keepScore ? score : 0;
+    const maxScore = 1000;
+    const startWidth = 6;
+    const minWidth = 1.6;
+    const difficulty = Math.min(currentScore / maxScore, 1);
+    const widthSegments = startWidth - (startWidth - minWidth) * difficulty;
+
     const padY = points[padSegment].y;
-    for(let i = 0; i <= 4; i++) {
+    for(let i = 0; i <= Math.ceil(widthSegments); i++) {
         points[padSegment + i].y = padY;
     }
 
     terrainRef.current = points;
     padRef.current = {
         x: points[padSegment].x,
-        width: segmentWidth * 4,
+        width: segmentWidth * widthSegments,
         y: padY
     };
     
@@ -1322,6 +1331,11 @@ const ArcadeModal = ({ onClose, accentColor = "#00ff00" }) => {
                 style={{ borderColor: accentColor, backgroundColor: "#000000", boxShadow: isLowQuality ? "none" : `0 0 30px ${accentColor}20` }}
                 onClick={(e) => e.stopPropagation()}
             >
+                {isLowQuality && (
+                    <div className="absolute top-3 left-3 z-50 px-2 py-1 bg-red-900/90 border border-red-500 text-red-500 text-[10px] font-bold font-mono rounded pointer-events-none animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]">
+                        ⚠ LOW PERF
+                    </div>
+                )}
                 <CurrentGame 
                     onClose={handleClose} 
                     accentColor={accentColor} 
