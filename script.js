@@ -58,18 +58,6 @@ const PongGame = ({ onClose, accentColor = "#00ff00", onGameStateChange }) => {
     if (onGameStateChange) onGameStateChange(gameStarted);
   }, [gameStarted, onGameStateChange]);
 
-  const [gameState, setGameState] = useState({
-    playerY: 150,
-    aiY: 150,
-    ballX: 400,
-    ballY: 150,
-    ballVelX: 1.2,
-    ballVelY: 0.5,
-    playerScore: 0,
-    aiScore: 0,
-    gameOver: false,
-  });
-
   const gameParamsRef = useRef({
     playerY: 150,
     aiY: 150,
@@ -223,8 +211,6 @@ const PongGame = ({ onClose, accentColor = "#00ff00", onGameStateChange }) => {
         params.ballVelX = -1.5;
         params.ballVelY = 1;
       }
-
-      setGameState({ ...params, gameOver: false });
     };
 
     const draw = () => {
@@ -410,6 +396,7 @@ const SnakeGame = ({ onClose, accentColor, onGameStateChange }) => {
   const directionRef = useRef({ x: 1, y: 0 });
   const directionQueueRef = useRef([]); // Buffer pour les inputs
   const foodRef = useRef({ x: 0, y: 0 });
+  const obstaclesRef = useRef([]);
   const isDyingRef = useRef(false);
   const isEatingRef = useRef(false);
   const eatenFoodRef = useRef({ x: 0, y: 0 });
@@ -432,6 +419,7 @@ const SnakeGame = ({ onClose, accentColor, onGameStateChange }) => {
       { x: 4, y: 3 },
       { x: 3, y: 3 },
     ];
+    obstaclesRef.current = [];
     prevSnakeRef.current = [...snakeRef.current];
     directionRef.current = { x: 1, y: 0 };
     directionQueueRef.current = []; // Reset buffer
@@ -563,6 +551,14 @@ const SnakeGame = ({ onClose, accentColor, onGameStateChange }) => {
       return;
     }
 
+    // Collision Obstacles
+    if (obstaclesRef.current.some((obs) => obs.x === head.x && obs.y === head.y)) {
+      isDyingRef.current = true;
+      snakeRef.current.unshift(head);
+      snakeRef.current.pop();
+      return;
+    }
+
     // Collision Soi-même
     // On exclut la queue car elle va bouger (sauf si on mange, mais la nourriture n'est pas sur le corps)
     if (snakeRef.current.slice(0, -1).some((segment) => segment.x === head.x && segment.y === head.y)) {
@@ -581,6 +577,21 @@ const SnakeGame = ({ onClose, accentColor, onGameStateChange }) => {
       setScore((s) => s + 10);
       spawnFood();
       // Pas de pop(), le serpent grandit
+      
+      // Apparition d'un obstacle tous les 5 fruits mangés
+      const eatenCount = snakeRef.current.length - 3;
+      if (Math.floor(eatenCount / 5) > obstaclesRef.current.length) {
+        let obs;
+        do {
+          obs = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
+        } while (
+          snakeRef.current.some((s) => s.x === obs.x && s.y === obs.y) ||
+          (foodRef.current.x === obs.x && foodRef.current.y === obs.y) ||
+          (head.x === obs.x && head.y === obs.y) ||
+          obstaclesRef.current.some((o) => o.x === obs.x && o.y === obs.y)
+        );
+        obstaclesRef.current.push(obs);
+      }
     } else {
       isEatingRef.current = false;
       snakeRef.current.pop();
@@ -618,6 +629,18 @@ const SnakeGame = ({ onClose, accentColor, onGameStateChange }) => {
       ctx.lineTo(CANVAS_WIDTH, y);
     }
     ctx.stroke();
+
+    // Obstacles (Boule Rouge)
+    ctx.fillStyle = "#ef4444";
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = "#ef4444";
+    obstaclesRef.current.forEach((obs) => {
+      const x = obs.x * GRID_SIZE + GRID_SIZE / 2;
+      const y = obs.y * GRID_SIZE + GRID_SIZE / 2;
+      ctx.beginPath();
+      ctx.arc(x, y, 10, 0, Math.PI * 2);
+      ctx.fill();
+    });
 
     // Serpent (Style Signal avec interpolation)
     ctx.strokeStyle = accentColor;
@@ -817,8 +840,8 @@ const LunarLanderGame = ({ onClose, accentColor, onGameStateChange }) => {
 
   const CANVAS_WIDTH = 800;
   const CANVAS_HEIGHT = 300;
-  const GRAVITY = 0.02;
-  const THRUST_POWER = 0.04;
+  const GRAVITY = 0.012;
+  const THRUST_POWER = 0.025;
   const ROTATION_SPEED = 0.02;
 
   useEffect(() => {
@@ -864,6 +887,7 @@ const LunarLanderGame = ({ onClose, accentColor, onGameStateChange }) => {
     };
     
     particlesRef.current = [];
+
     fuelRef.current = 100;
     setVictory(false);
     setGameOver(false);
@@ -1303,7 +1327,7 @@ const Oscilloscope = ({ temp = 32, accentColor = "#fbbf24", onClick }) => {
   );
 };
 
-const ParticleBackground = ({ brightness }) => {
+const ParticleBackground = React.memo(({ brightness }) => {
   const canvasRef = useRef(null);
   // 1. Créer une référence pour stocker la luminosité sans reset l'effet
   const brightnessRef = useRef(brightness);
@@ -1386,10 +1410,12 @@ const ParticleBackground = ({ brightness }) => {
   return (
     <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" />
   );
-};
+});
 
 const App = () => {
   const [seconds, setSeconds] = useState(Math.floor(Math.random() * 5000000));
+  const pcbRef = useRef(null);
+  const tempValueRef = useRef(32.4);
   const [temp, setTemp] = useState(32.4); // Température actuelle
   const [volt, setVolt] = useState("3.30");
 
@@ -1532,15 +1558,34 @@ const App = () => {
   const accentColor = getTrackColor(true); // Cette variable contient le Jaune -> Rouge dynamique basé sur la température
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTemp((prevTemp) => {
-        const diff = targetTemp - prevTemp;
-        const change = Math.max(-0.3, Math.min(0.3, diff * 0.08));
-        return parseFloat((prevTemp + change).toFixed(2));
-      });
-    }, 100);
+    let animationFrame;
+    const updateLoop = () => {
+      const diff = targetTemp - tempValueRef.current;
+      // Transition plus douce
+      const change = Math.max(-0.005, Math.min(0.005, diff * 0.0025));
+      
+      if (Math.abs(change) > 0.00025) {
+          tempValueRef.current += change;
+          
+          // Mise à jour directe du DOM pour la couleur de fond (Fluide 60fps)
+          if (pcbRef.current) {
+            const ratio = Math.max(0, Math.min(1, (tempValueRef.current - 32) / 38));
+            pcbRef.current.style.setProperty('--temp-ratio', ratio);
+          }
+          
+          // Mise à jour de React uniquement si changement significatif (Optimisation)
+          setTemp(prev => {
+            if (Math.abs(prev - tempValueRef.current) > 0.2) {
+                return parseFloat(tempValueRef.current.toFixed(1));
+            }
+            return prev;
+          });
+      }
+      animationFrame = requestAnimationFrame(updateLoop);
+    };
+    animationFrame = requestAnimationFrame(updateLoop);
 
-    return () => clearInterval(interval);
+    return () => cancelAnimationFrame(animationFrame);
   }, [targetTemp]);
 
   const [contentData, setContentData] = useState(null);
@@ -1563,14 +1608,14 @@ const App = () => {
         setBootLogs((prev) => [...prev, baseText]);
 
         for (let dots = 1; dots <= 3; dots++) {
-          await new Promise((resolve) => setTimeout(resolve, 150));
+          await new Promise((resolve) => setTimeout(resolve, 100));
           setBootLogs((prev) => {
             const newLogs = [...prev];
             newLogs[i] = baseText + ".".repeat(dots);
             return newLogs;
           });
         }
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 50));
       }
       setIsReady(true);
     };
@@ -1605,10 +1650,10 @@ const App = () => {
     <>
       {/* --- COUCHE 1 : Fond et Particules (Fixes et stables) --- */}
       <div
+        ref={pcbRef}
         className="pcb-blueprint"
         style={{ 
           "--bg-opacity": bgOpacity,
-          "--temp-ratio": (temp - 32) / 38 // Ratio 0-1 basé sur la température
         }}
       ></div>
       <ParticleBackground brightness={brightness} />
