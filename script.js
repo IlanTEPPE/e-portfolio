@@ -28,6 +28,15 @@ const PongGame = ({ accentColor = "#00ff00", onGameStateChange, isLowQuality }) 
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(parseInt(localStorage.getItem("pong_highscore") || "0"));
   const keysPressed = useRef({});
+  
+  // Ref pour accès immédiat dans la boucle de jeu sans redémarrage
+  const isLowQualityRef = useRef(isLowQuality);
+  useEffect(() => { 
+    isLowQualityRef.current = isLowQuality;
+    if (isLowQuality) {
+        trailRef.current = []; // Nettoyage immédiat
+    }
+  }, [isLowQuality]);
 
   useEffect(() => {
     if (score > highScore) {
@@ -163,7 +172,7 @@ const PongGame = ({ accentColor = "#00ff00", onGameStateChange, isLowQuality }) 
       params.ballY += params.ballVelY * timeScale;
 
       // Ajouter à la trace (trail)
-      if (!isLowQuality) {
+      if (!isLowQualityRef.current) {
         trailRef.current.push({
           x: params.ballX,
           y: params.ballY,
@@ -239,7 +248,7 @@ const PongGame = ({ accentColor = "#00ff00", onGameStateChange, isLowQuality }) 
       ctx.globalAlpha = 1;
 
       // Trace de la balle (trail)
-      if (!isLowQuality) {
+      if (!isLowQualityRef.current) {
         trailRef.current.forEach((point, index) => {
           const opacity = (index / trailRef.current.length) * 0.3;
           ctx.fillStyle = pongColor;
@@ -381,7 +390,7 @@ const PongGame = ({ accentColor = "#00ff00", onGameStateChange, isLowQuality }) 
   );
 };
 
-const SnakeGame = ({ accentColor, onGameStateChange, controlMode, setControlMode, isLowQuality }) => {
+const SnakeGame = ({ accentColor, onGameStateChange, controlMode, setControlMode }) => {
   const canvasRef = useRef(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
@@ -843,6 +852,15 @@ const LunarLanderGame = ({ accentColor, onGameStateChange, controlMode, setContr
   const [highScore, setHighScore] = useState(parseInt(localStorage.getItem("lunar_highscore") || "0"));
   const waitingForInputRef = useRef(false);
 
+  // Ref pour accès immédiat dans la boucle de jeu
+  const isLowQualityRef = useRef(isLowQuality);
+  useEffect(() => { 
+    isLowQualityRef.current = isLowQuality;
+    if (isLowQuality) {
+        particlesRef.current = []; // Nettoyage immédiat
+    }
+  }, [isLowQuality]);
+
   useEffect(() => {
     if (score > highScore) {
       setHighScore(score);
@@ -1014,7 +1032,7 @@ const LunarLanderGame = ({ accentColor, onGameStateChange, controlMode, setContr
         lander.vy += Math.sin(lander.angle) * THRUST_POWER * timeScale;
         fuelRef.current = Math.max(0, fuelRef.current - (0.2 / 1.5) * timeScale);
         
-        if (!isLowQuality) {
+        if (!isLowQualityRef.current) {
             for(let i=0; i<1; i++) { // Réduction particules (3 -> 1)
                 particlesRef.current.push({
                     x: lander.x - Math.cos(lander.angle) * 8,
@@ -1137,7 +1155,7 @@ const LunarLanderGame = ({ accentColor, onGameStateChange, controlMode, setContr
     ctx.restore();
 
     // Particles
-    if (!isLowQuality) {
+    if (!isLowQualityRef.current) {
         particlesRef.current.forEach(p => {
             ctx.fillStyle = `rgba(255, 255, 255, ${p.life})`;
             ctx.beginPath();
@@ -1233,38 +1251,11 @@ const LunarLanderGame = ({ accentColor, onGameStateChange, controlMode, setContr
   );
 };
 
-const ArcadeModal = ({ onClose, accentColor = "#00ff00" }) => {
+const ArcadeModal = ({ onClose, accentColor = "#00ff00", isLowQuality }) => {
   const [gameIndex, setGameIndex] = useState(0);
   const [gameActive, setGameActive] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [controlMode, setControlMode] = useState("ZQSD");
-  const [isLowQuality, setIsLowQuality] = useState(false);
-
-  // Détection automatique des performances
-  useEffect(() => {
-    if (isLowQuality) return; // Si déjà en mode éco, on arrête de surveiller
-
-    let lastTime = performance.now();
-    let badFrames = 0;
-    let rafId;
-
-    const checkPerformance = () => {
-      const now = performance.now();
-      const delta = now - lastTime;
-      lastTime = now;
-
-      // Si FPS < 45 (delta > 22ms)
-      if (delta > 22) badFrames++;
-      else badFrames = Math.max(0, badFrames - 1);
-
-      // Si on a eu ~1 seconde de mauvaises performances
-      if (badFrames > 60) setIsLowQuality(true);
-      else rafId = requestAnimationFrame(checkPerformance);
-    };
-    
-    rafId = requestAnimationFrame(checkPerformance);
-    return () => cancelAnimationFrame(rafId);
-  }, [isLowQuality]);
 
   const handleClose = () => {
     setIsClosing(true);
@@ -1456,10 +1447,12 @@ const Oscilloscope = ({ temp = 32, accentColor = "#fbbf24", onClick }) => {
   );
 };
 
-const ParticleBackground = React.memo(({ brightness }) => {
+const ParticleBackground = React.memo(({ brightness, isLowQuality }) => {
   const canvasRef = useRef(null);
   // 1. Créer une référence pour stocker la luminosité sans reset l'effet
   const brightnessRef = useRef(brightness);
+  const isLowQualityRef = useRef(isLowQuality);
+  useEffect(() => { isLowQualityRef.current = isLowQuality; }, [isLowQuality]);
 
   // 2. Mettre à jour la référence quand la prop change (ne déclenche pas de re-render)
   useEffect(() => {
@@ -1505,7 +1498,8 @@ const ParticleBackground = React.memo(({ brightness }) => {
         p.x += p.speedX;
         p.y += p.speedY;
 
-        if (mouse.x) {
+        // Désactiver l'interaction souris en mode basse performance
+        if (!isLowQualityRef.current && mouse.x) {
           const dx = p.x - mouse.x;
           const dy = p.y - mouse.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
@@ -1561,6 +1555,34 @@ const App = () => {
   const [brightness, setBrightness] = useState(15);
   const [voltage, setVoltage] = useState(0);
   const [time, setTime] = useState(new Date().toLocaleTimeString());
+
+  // Détection automatique des performances (Globale)
+  const [isLowQuality, setIsLowQuality] = useState(false);
+
+  useEffect(() => {
+    if (isLowQuality) return; // Si déjà en mode éco, on arrête de surveiller
+
+    let lastTime = performance.now();
+    let badFrames = 0;
+    let rafId;
+
+    const checkPerformance = () => {
+      const now = performance.now();
+      const delta = now - lastTime;
+      lastTime = now;
+
+      // Si FPS < 45 (delta > 22ms)
+      if (delta > 22) badFrames++;
+      else badFrames = Math.max(0, badFrames - 1);
+
+      // Trigger plus rapide : 20 frames mauvaises (~300ms de lag continu)
+      if (badFrames > 20) setIsLowQuality(true);
+      else rafId = requestAnimationFrame(checkPerformance);
+    };
+    
+    rafId = requestAnimationFrame(checkPerformance);
+    return () => cancelAnimationFrame(rafId);
+  }, [isLowQuality]);
 
   // Calcul de la tension en fonction du slider : 3.3V à 0%, 5V à 50%, 6.7V à 100%
   const calculatedVolt = (3.3 + (voltage / 100) * 3.4).toFixed(2);
@@ -1786,7 +1808,7 @@ const App = () => {
               "--bg-opacity": bgOpacity,
             }}
           ></div>
-          <ParticleBackground brightness={brightness} />
+          <ParticleBackground brightness={brightness} isLowQuality={isLowQuality} />
         </>
       )}
 
@@ -2590,7 +2612,7 @@ const App = () => {
 
       {/* Jeu Pong Easter Egg */}
       {showPongGame && (
-        <ArcadeModal onClose={() => setShowPongGame(false)} accentColor="#00ff00" />
+        <ArcadeModal onClose={() => setShowPongGame(false)} accentColor="#00ff00" isLowQuality={isLowQuality} />
       )}
     </>
   );
