@@ -20,7 +20,7 @@ const Icon = ({ name, size = 20, className = "", style = {} }) => {
   );
 };
 
-const PongGame = ({ accentColor = "#00ff00", onGameStateChange }) => {
+const PongGame = ({ accentColor = "#00ff00", onGameStateChange, isLowQuality }) => {
   const canvasRef = useRef(null);
   const mouseYRef = useRef(0);
   const trailRef = useRef([]);
@@ -163,15 +163,19 @@ const PongGame = ({ accentColor = "#00ff00", onGameStateChange }) => {
       params.ballY += params.ballVelY * timeScale;
 
       // Ajouter à la trace (trail)
-      trailRef.current.push({
-        x: params.ballX,
-        y: params.ballY,
-        life: 1,
-      });
+      if (!isLowQuality) {
+        trailRef.current.push({
+          x: params.ballX,
+          y: params.ballY,
+          life: 1,
+        });
 
-      // Garder seulement les derniers points de la trace
-      if (trailRef.current.length > 15) {
-        trailRef.current.shift();
+        // Garder seulement les derniers points de la trace
+        if (trailRef.current.length > 15) {
+          trailRef.current.shift();
+        }
+      } else {
+        trailRef.current = [];
       }
 
       // Rebond haut/bas
@@ -235,15 +239,17 @@ const PongGame = ({ accentColor = "#00ff00", onGameStateChange }) => {
       ctx.globalAlpha = 1;
 
       // Trace de la balle (trail)
-      trailRef.current.forEach((point, index) => {
-        const opacity = (index / trailRef.current.length) * 0.3;
-        ctx.fillStyle = pongColor;
-        ctx.globalAlpha = opacity;
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, BALL_SIZE / 3, 0, Math.PI * 2);
-        ctx.fill();
-      });
-      ctx.globalAlpha = 1;
+      if (!isLowQuality) {
+        trailRef.current.forEach((point, index) => {
+          const opacity = (index / trailRef.current.length) * 0.3;
+          ctx.fillStyle = pongColor;
+          ctx.globalAlpha = opacity;
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, BALL_SIZE / 3, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+      }
 
       // Raquettes avec glow oscilloscope
       ctx.fillStyle = pongColor;
@@ -375,7 +381,7 @@ const PongGame = ({ accentColor = "#00ff00", onGameStateChange }) => {
   );
 };
 
-const SnakeGame = ({ accentColor, onGameStateChange, controlMode, setControlMode }) => {
+const SnakeGame = ({ accentColor, onGameStateChange, controlMode, setControlMode, isLowQuality }) => {
   const canvasRef = useRef(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
@@ -828,7 +834,7 @@ const SnakeGame = ({ accentColor, onGameStateChange, controlMode, setControlMode
   );
 };
 
-const LunarLanderGame = ({ accentColor, onGameStateChange, controlMode, setControlMode }) => {
+const LunarLanderGame = ({ accentColor, onGameStateChange, controlMode, setControlMode, isLowQuality }) => {
   const canvasRef = useRef(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
@@ -999,14 +1005,16 @@ const LunarLanderGame = ({ accentColor, onGameStateChange, controlMode, setContr
         lander.vy += Math.sin(lander.angle) * THRUST_POWER * timeScale;
         fuelRef.current = Math.max(0, fuelRef.current - (0.2 / 1.5) * timeScale);
         
-        for(let i=0; i<1; i++) { // Réduction particules (3 -> 1)
-            particlesRef.current.push({
-                x: lander.x - Math.cos(lander.angle) * 8,
-                y: lander.y - Math.sin(lander.angle) * 8,
-                vx: lander.vx - Math.cos(lander.angle) * 3 + (Math.random()-0.5),
-                vy: lander.vy - Math.sin(lander.angle) * 3 + (Math.random()-0.5),
-                life: 1.0
-            });
+        if (!isLowQuality) {
+            for(let i=0; i<1; i++) { // Réduction particules (3 -> 1)
+                particlesRef.current.push({
+                    x: lander.x - Math.cos(lander.angle) * 8,
+                    y: lander.y - Math.sin(lander.angle) * 8,
+                    vx: lander.vx - Math.cos(lander.angle) * 3 + (Math.random()-0.5),
+                    vy: lander.vy - Math.sin(lander.angle) * 3 + (Math.random()-0.5),
+                    life: 1.0
+                });
+            }
         }
     }
 
@@ -1120,12 +1128,14 @@ const LunarLanderGame = ({ accentColor, onGameStateChange, controlMode, setContr
     ctx.restore();
 
     // Particles
-    particlesRef.current.forEach(p => {
-        ctx.fillStyle = `rgba(255, 255, 255, ${p.life})`;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 1, 0, Math.PI*2);
-        ctx.fill();
-    });
+    if (!isLowQuality) {
+        particlesRef.current.forEach(p => {
+            ctx.fillStyle = `rgba(255, 255, 255, ${p.life})`;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 1, 0, Math.PI*2);
+            ctx.fill();
+        });
+    }
     
     // HUD
     ctx.fillStyle = accentColor;
@@ -1219,6 +1229,33 @@ const ArcadeModal = ({ onClose, accentColor = "#00ff00" }) => {
   const [gameActive, setGameActive] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [controlMode, setControlMode] = useState("ZQSD");
+  const [isLowQuality, setIsLowQuality] = useState(false);
+
+  // Détection automatique des performances
+  useEffect(() => {
+    if (isLowQuality) return; // Si déjà en mode éco, on arrête de surveiller
+
+    let lastTime = performance.now();
+    let badFrames = 0;
+    let rafId;
+
+    const checkPerformance = () => {
+      const now = performance.now();
+      const delta = now - lastTime;
+      lastTime = now;
+
+      // Si FPS < 45 (delta > 22ms)
+      if (delta > 22) badFrames++;
+      else badFrames = Math.max(0, badFrames - 1);
+
+      // Si on a eu ~1 seconde de mauvaises performances
+      if (badFrames > 60) setIsLowQuality(true);
+      else rafId = requestAnimationFrame(checkPerformance);
+    };
+    
+    rafId = requestAnimationFrame(checkPerformance);
+    return () => cancelAnimationFrame(rafId);
+  }, [isLowQuality]);
 
   const handleClose = () => {
     setIsClosing(true);
@@ -1282,7 +1319,7 @@ const ArcadeModal = ({ onClose, accentColor = "#00ff00" }) => {
 
             <div
                 className="relative w-full max-w-4xl rounded-3xl overflow-hidden border-2 shadow-2xl"
-                style={{ borderColor: accentColor, backgroundColor: "#000000", boxShadow: `0 0 30px ${accentColor}20` }}
+                style={{ borderColor: accentColor, backgroundColor: "#000000", boxShadow: isLowQuality ? "none" : `0 0 30px ${accentColor}20` }}
                 onClick={(e) => e.stopPropagation()}
             >
                 <CurrentGame 
@@ -1291,6 +1328,7 @@ const ArcadeModal = ({ onClose, accentColor = "#00ff00" }) => {
                     onGameStateChange={setGameActive}
                     controlMode={controlMode}
                     setControlMode={setControlMode}
+                    isLowQuality={isLowQuality}
                 />
             </div>
 
@@ -1725,14 +1763,18 @@ const App = () => {
   return (
     <>
       {/* --- COUCHE 1 : Fond et Particules (Fixes et stables) --- */}
-      <div
-        ref={pcbRef}
-        className="pcb-blueprint"
-        style={{ 
-          "--bg-opacity": bgOpacity,
-        }}
-      ></div>
-      <ParticleBackground brightness={brightness} />
+      {!showPongGame && (
+        <>
+          <div
+            ref={pcbRef}
+            className="pcb-blueprint"
+            style={{ 
+              "--bg-opacity": bgOpacity,
+            }}
+          ></div>
+          <ParticleBackground brightness={brightness} />
+        </>
+      )}
 
       {/* --- COUCHE 2 : L'écran de boot (Indépendant) --- */}
       {isBooting && (
