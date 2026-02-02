@@ -355,7 +355,7 @@ const PongGame = ({ accentColor = "#00ff00", onGameStateChange, isLowQuality }) 
               style={{ backgroundColor: "#000000" }}
             >
               <div className="text-center">
-                <div className="text-4xl font-bold mb-6" style={{ color: "#00ff00", textShadow: "0 0 20px #00ff00" }}>
+                <div className="text-4xl font-bold mb-6" style={{ color: "#00ff00", textShadow: isLowQuality ? "none" : "0 0 20px #00ff00" }}>
                   PONG
                 </div>
                 <button
@@ -1210,7 +1210,10 @@ const LunarLanderGame = ({ accentColor, onGameStateChange, controlMode, setContr
                   style={{ backgroundColor: "#000000" }}
                 >
                     <div className="text-center">
-                        <div className="text-4xl font-bold mb-6" style={{ color: accentColor, textShadow: `0 0 20px ${accentColor}` }}>
+                        <div className="text-4xl font-bold mb-6" style={{ 
+                            color: victory ? "#3b82f6" : (gameOver ? "#ef4444" : accentColor), 
+                            textShadow: isLowQuality ? "none" : `0 0 20px ${victory ? "#3b82f6" : (gameOver ? "#ef4444" : accentColor)}` 
+                        }}>
                             {victory ? "LANDING SUCCESS" : (gameOver ? "CRITICAL FAILURE" : "LUNAR LANDER")}
                         </div>
                         {(gameOver || victory) && <div className="text-white mb-6 font-mono">SCORE: {score}</div>}
@@ -1351,7 +1354,7 @@ const ArcadeModal = ({ onClose, accentColor = "#00ff00", isLowQuality }) => {
   );
 };
 
-const Oscilloscope = ({ temp = 32, accentColor = "#fbbf24", onClick }) => {
+const Oscilloscope = ({ temp = 32, accentColor = "#fbbf24", onClick, isLowQuality }) => {
   const wavePath =
     "M0 25 Q 12.5 5, 25 25 T 50 25 T 75 25 T 100 25 T 125 25 T 150 25 T 175 25 T 200 25";
   
@@ -1366,6 +1369,8 @@ const Oscilloscope = ({ temp = 32, accentColor = "#fbbf24", onClick }) => {
   }, [animationSpeed]);
   
   useEffect(() => {
+    if (isLowQuality) return;
+
     let animationFrame;
     let lastTime = Date.now();
     
@@ -1386,7 +1391,7 @@ const Oscilloscope = ({ temp = 32, accentColor = "#fbbf24", onClick }) => {
     
     animationFrame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationFrame);
-  }, []);
+  }, [isLowQuality]);
   
   return (
     <div 
@@ -1411,7 +1416,7 @@ const Oscilloscope = ({ temp = 32, accentColor = "#fbbf24", onClick }) => {
             fill: "none",
             strokeWidth: 1.5,
             strokeLinecap: "round",
-            filter: `drop-shadow(0 0 4px ${accentColor})`,
+            filter: isLowQuality ? "none" : `drop-shadow(0 0 4px ${accentColor})`,
             strokeDasharray: 200
           }} 
         />
@@ -1806,6 +1811,8 @@ const App = () => {
             className="pcb-blueprint"
             style={{ 
               "--bg-opacity": bgOpacity,
+              backgroundImage: isLowQuality ? "none" : undefined,
+              backgroundColor: isLowQuality ? "#010a08" : undefined
             }}
           ></div>
           <ParticleBackground brightness={brightness} isLowQuality={isLowQuality} />
@@ -1876,7 +1883,7 @@ const App = () => {
       )}
       {/* --- COUCHE 3 : Le contenu qui tremble et défile --- */}
       <div
-        className="min-h-screen p-4 md:p-10 flex flex-col items-center relative voltage-shake"
+        className={`min-h-screen p-4 md:p-10 flex flex-col items-center relative ${!isLowQuality ? "voltage-shake" : ""}`}
         style={{
           "--dynamic-accent": accentColor,
           "--shake-val": shakeIntensity,
@@ -1939,7 +1946,7 @@ const App = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12">
             {/* PCB Column */}
             <div className="lg:col-span-5 flex justify-center items-start lg:sticky lg:top-6 order-2 lg:order-1">
-              <div className="bg-[#011a14]/80 rounded-[2.5rem] p-6 border border-emerald-900/30 backdrop-blur-md shadow-2xl w-full max-w-[380px] animate-terminal scanline relative overflow-hidden">
+              <div className={`bg-[#011a14]/80 rounded-[2.5rem] p-6 border border-emerald-900/30 backdrop-blur-md shadow-2xl w-full max-w-[380px] animate-terminal ${!isLowQuality ? "scanline" : ""} relative overflow-hidden`}>
                 <svg
                   viewBox="0 -5 100 210"
                   className="w-full h-auto"
@@ -2380,7 +2387,7 @@ const App = () => {
               className="lg:col-span-7 w-full order-1 lg:order-2 scroll-mt-24"
               ref={contentRef}
             >
-              <div className="bg-[#021a14]/90 border-2 border-emerald-900/40 rounded-[2.5rem] p-6 md:p-10 backdrop-blur-3xl min-h-[500px] shadow-2xl relative border-t-emerald-500/20 static-glow overflow-hidden">
+              <div className={`bg-[#021a14]/90 border-2 border-emerald-900/40 rounded-[2.5rem] p-6 md:p-10 backdrop-blur-3xl min-h-[500px] shadow-2xl relative border-t-emerald-500/20 ${!isLowQuality ? "static-glow" : ""} overflow-hidden`}>
                 <div key={activeSection} className="animate-section">
                   <div className="flex items-center justify-between mb-8 border-b border-emerald-900/40 pb-6 relative z-10">
                     <div className="flex items-center gap-4">
@@ -2406,7 +2413,7 @@ const App = () => {
                         </p>
                       </div>
                     </div>
-                    <Oscilloscope temp={temp} accentColor={accentColor} onClick={() => setShowPongGame(true)} />
+                    <Oscilloscope temp={temp} accentColor={accentColor} onClick={() => setShowPongGame(true)} isLowQuality={isLowQuality} />
                   </div>
 
                   <div className="space-y-6 relative z-10">
