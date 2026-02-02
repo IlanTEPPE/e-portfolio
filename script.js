@@ -20,7 +20,7 @@ const Icon = ({ name, size = 20, className = "", style = {} }) => {
   );
 };
 
-const PongGame = ({ onClose, accentColor = "#00ff00", onGameStateChange }) => {
+const PongGame = ({ accentColor = "#00ff00", onGameStateChange }) => {
   const canvasRef = useRef(null);
   const mouseYRef = useRef(0);
   const trailRef = useRef([]);
@@ -375,7 +375,7 @@ const PongGame = ({ onClose, accentColor = "#00ff00", onGameStateChange }) => {
   );
 };
 
-const SnakeGame = ({ onClose, accentColor, onGameStateChange, controlMode, setControlMode }) => {
+const SnakeGame = ({ accentColor, onGameStateChange, controlMode, setControlMode }) => {
   const canvasRef = useRef(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
@@ -828,7 +828,7 @@ const SnakeGame = ({ onClose, accentColor, onGameStateChange, controlMode, setCo
   );
 };
 
-const LunarLanderGame = ({ onClose, accentColor, onGameStateChange, controlMode, setControlMode }) => {
+const LunarLanderGame = ({ accentColor, onGameStateChange, controlMode, setControlMode }) => {
   const canvasRef = useRef(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
@@ -1494,7 +1494,6 @@ const App = () => {
   const pcbRef = useRef(null);
   const tempValueRef = useRef(32.4);
   const [temp, setTemp] = useState(32.4); // Température actuelle
-  const [volt, setVolt] = useState("3.30");
 
   const [isBooting, setIsBooting] = useState(true);
   const [bootLogs, setBootLogs] = useState([]);

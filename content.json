@@ -41,22 +41,19 @@
           "id": "sk1",
           "title": "Développement",
           "sub": "Python, C, VHDL",
-          "desc": "Création de firmware et scripts de traitement industriel.",
-          "icon": "code"
+          "desc": "Création de firmware et scripts de traitement industriel."
         },
         {
           "id": "sk2",
           "title": "CAO Électronique",
           "sub": "KiCad & Routage",
-          "desc": "Conception de schémas et de circuits imprimés multicouches.",
-          "icon": "cpu"
+          "desc": "Conception de schémas et de circuits imprimés multicouches."
         },
         {
           "id": "sk3",
           "title": "Industriel",
           "sub": "API & B1V",
-          "desc": "Programmation d'automates Schneider/Siemens et sécurité électrique.",
-          "icon": "shield-check"
+          "desc": "Programmation d'automates Schneider/Siemens et sécurité électrique."
         }
       ]
     },
@@ -120,7 +117,6 @@
     {
       "id": "home",
       "d": "M 50 15 L 50 35 L 20 65 L 20 79",
-      "len": 76,
       "label": "PROFIL",
       "x": 20,
       "y": 85
@@ -128,7 +124,6 @@
     {
       "id": "skills",
       "d": "M 50 15 L 50 35 L 80 65 L 80 79",
-      "len": 76,
       "label": "COMPÉTENCES",
       "x": 80,
       "y": 85
@@ -136,7 +131,6 @@
     {
       "id": "projects",
       "d": "M 50 15 L 50 101 L 46 105 L 24 131 L 20 135 L 20 149",
-      "len": 146,
       "label": "PROJETS",
       "x": 20,
       "y": 155
@@ -144,7 +138,6 @@
     {
       "id": "hobbies",
       "d": "M 50 15 L 50 101 L 54 105 L 76 131 L 80 135 L 80 149",
-      "len": 146,
       "label": "LOISIRS",
       "x": 80,
       "y": 155
