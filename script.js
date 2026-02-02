@@ -240,11 +240,22 @@ const PongGame = ({ accentColor = "#00ff00", onGameStateChange, isLowQuality }) 
       ctx.fillStyle = "#000000";
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-      // Grille simplifiée (Optimisation majeure)
-      ctx.strokeStyle = pongColor;
-      ctx.globalAlpha = 0.1;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      // Grille
+      if (!isLowQualityRef.current) {
+          ctx.strokeStyle = pongColor;
+          ctx.globalAlpha = 0.15;
+          for (let i = 0; i < CANVAS_WIDTH; i += 20) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, CANVAS_HEIGHT); ctx.stroke();
+          }
+          for (let i = 0; i < CANVAS_HEIGHT; i += 20) {
+            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(CANVAS_WIDTH, i); ctx.stroke();
+          }
+      } else {
+          ctx.strokeStyle = pongColor;
+          ctx.globalAlpha = 0.1;
+          ctx.lineWidth = 2;
+          ctx.strokeRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      }
       ctx.globalAlpha = 1;
 
       // Trace de la balle (trail)
@@ -262,6 +273,10 @@ const PongGame = ({ accentColor = "#00ff00", onGameStateChange, isLowQuality }) 
 
       // Raquettes avec glow oscilloscope
       ctx.fillStyle = pongColor;
+      if (!isLowQualityRef.current) {
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = pongColor;
+      }
       ctx.fillRect(0, params.playerY, PADDLE_WIDTH, PADDLE_HEIGHT);
       ctx.fillRect(
         CANVAS_WIDTH - PADDLE_WIDTH,
@@ -271,9 +286,14 @@ const PongGame = ({ accentColor = "#00ff00", onGameStateChange, isLowQuality }) 
       );
 
       // Balle avec glow
+      if (!isLowQualityRef.current) {
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = pongColor;
+      }
       ctx.beginPath();
       ctx.arc(params.ballX, params.ballY, BALL_SIZE / 2, 0, Math.PI * 2);
       ctx.fill();
+      ctx.shadowBlur = 0;
 
       // Ligne du milieu
       ctx.strokeStyle = pongColor;
@@ -355,7 +375,7 @@ const PongGame = ({ accentColor = "#00ff00", onGameStateChange, isLowQuality }) 
               style={{ backgroundColor: "#000000" }}
             >
               <div className="text-center">
-                <div className="text-4xl font-bold mb-6" style={{ color: "#00ff00", textShadow: isLowQuality ? "none" : "0 0 20px #00ff00" }}>
+                <div className="text-4xl font-bold mb-6" style={{ color: "#00ff00", textShadow: "0 0 20px #00ff00" }}>
                   PONG
                 </div>
                 <button
@@ -1369,8 +1389,6 @@ const Oscilloscope = ({ temp = 32, accentColor = "#fbbf24", onClick, isLowQualit
   }, [animationSpeed]);
   
   useEffect(() => {
-    if (isLowQuality) return;
-
     let animationFrame;
     let lastTime = Date.now();
     
@@ -1391,7 +1409,7 @@ const Oscilloscope = ({ temp = 32, accentColor = "#fbbf24", onClick, isLowQualit
     
     animationFrame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationFrame);
-  }, [isLowQuality]);
+  }, []);
   
   return (
     <div 
@@ -1416,7 +1434,7 @@ const Oscilloscope = ({ temp = 32, accentColor = "#fbbf24", onClick, isLowQualit
             fill: "none",
             strokeWidth: 1.5,
             strokeLinecap: "round",
-            filter: isLowQuality ? "none" : `drop-shadow(0 0 4px ${accentColor})`,
+            filter: `drop-shadow(0 0 4px ${accentColor})`,
             strokeDasharray: 200
           }} 
         />
@@ -1576,12 +1594,12 @@ const App = () => {
       const delta = now - lastTime;
       lastTime = now;
 
-      // Si FPS < 45 (delta > 22ms)
-      if (delta > 22) badFrames++;
+      // Si FPS <= 20 (delta >= 50ms)
+      if (delta >= 50) badFrames++;
       else badFrames = Math.max(0, badFrames - 1);
 
-      // Trigger plus rapide : 20 frames mauvaises (~300ms de lag continu)
-      if (badFrames > 20) setIsLowQuality(true);
+      // Trigger : 2 secondes (approx 40 frames à 20fps)
+      if (badFrames > 40) setIsLowQuality(true);
       else rafId = requestAnimationFrame(checkPerformance);
     };
     
@@ -1811,8 +1829,6 @@ const App = () => {
             className="pcb-blueprint"
             style={{ 
               "--bg-opacity": bgOpacity,
-              backgroundImage: isLowQuality ? "none" : undefined,
-              backgroundColor: isLowQuality ? "#010a08" : undefined
             }}
           ></div>
           <ParticleBackground brightness={brightness} isLowQuality={isLowQuality} />
