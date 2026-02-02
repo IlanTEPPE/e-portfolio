@@ -26,7 +26,15 @@ const PongGame = ({ onClose, accentColor = "#00ff00", onGameStateChange }) => {
   const trailRef = useRef([]);
   const [gameStarted, setGameStarted] = useState(false);
   const [score, setScore] = useState(0);
+  const [highScore, setHighScore] = useState(parseInt(localStorage.getItem("pong_highscore") || "0"));
   const keysPressed = useRef({});
+
+  useEffect(() => {
+    if (score > highScore) {
+      setHighScore(score);
+      localStorage.setItem("pong_highscore", score);
+    }
+  }, [score]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -63,8 +71,8 @@ const PongGame = ({ onClose, accentColor = "#00ff00", onGameStateChange }) => {
     aiY: 150,
     ballX: 400,
     ballY: 150,
-    ballVelX: 1.2,
-    ballVelY: 0.5,
+    ballVelX: 5.0,
+    ballVelY: 3.0,
     playerScore: 0,
     aiScore: 0,
   });
@@ -118,16 +126,17 @@ const PongGame = ({ onClose, accentColor = "#00ff00", onGameStateChange }) => {
     const CANVAS_WIDTH = canvas.width;
     const CANVAS_HEIGHT = canvas.height;
 
+    let lastTime = performance.now();
     let animationId;
 
-    const update = () => {
+    const update = (timeScale) => {
       // Contrôle Clavier
       if (gameStarted) {
         if (keysPressed.current["ArrowUp"]) {
-          mouseYRef.current = Math.max(0, mouseYRef.current - 2);
+          mouseYRef.current = Math.max(0, mouseYRef.current - 10 * timeScale);
         }
         if (keysPressed.current["ArrowDown"]) {
-          mouseYRef.current = Math.min(CANVAS_HEIGHT, mouseYRef.current + 2);
+          mouseYRef.current = Math.min(CANVAS_HEIGHT, mouseYRef.current + 10 * timeScale);
         }
       }
 
@@ -138,7 +147,7 @@ const PongGame = ({ onClose, accentColor = "#00ff00", onGameStateChange }) => {
       // IA (suit la balle avec difficulté)
       const aiCenter = params.aiY + PADDLE_HEIGHT / 2;
       const ballCenter = params.ballY;
-      const aiSpeed = 1.2;
+      const aiSpeed = 6.0 * timeScale;
 
       if (aiCenter < ballCenter - 20) {
         params.aiY = Math.min(
@@ -150,8 +159,8 @@ const PongGame = ({ onClose, accentColor = "#00ff00", onGameStateChange }) => {
       }
 
       // Mouvement de la balle
-      params.ballX += params.ballVelX;
-      params.ballY += params.ballVelY;
+      params.ballX += params.ballVelX * timeScale;
+      params.ballY += params.ballVelY * timeScale;
 
       // Ajouter à la trace (trail)
       trailRef.current.push({
@@ -161,7 +170,7 @@ const PongGame = ({ onClose, accentColor = "#00ff00", onGameStateChange }) => {
       });
 
       // Garder seulement les derniers points de la trace
-      if (trailRef.current.length > 30) {
+      if (trailRef.current.length > 15) {
         trailRef.current.shift();
       }
 
@@ -198,52 +207,31 @@ const PongGame = ({ onClose, accentColor = "#00ff00", onGameStateChange }) => {
       // Balle sort du terrain
       if (params.ballX < 0) {
         params.aiScore++;
-        setScore(s => s - 50);
+        setScore(s => Math.max(0, s - 50));
         params.ballX = CANVAS_WIDTH / 2;
         params.ballY = CANVAS_HEIGHT / 2;
-        params.ballVelX = 1.5;
-        params.ballVelY = 1;
+        params.ballVelX = 5.0;
+        params.ballVelY = 3.0;
       } else if (params.ballX > CANVAS_WIDTH) {
         params.playerScore++;
         setScore(s => s + 50);
         params.ballX = CANVAS_WIDTH / 2;
         params.ballY = CANVAS_HEIGHT / 2;
-        params.ballVelX = -1.5;
-        params.ballVelY = 1;
+        params.ballVelX = -5.0;
+        params.ballVelY = 3.0;
       }
     };
 
-    const draw = () => {
+    const draw = (fps = 0) => {
       // Fond noir de CRT
       ctx.fillStyle = "#000000";
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-      // Grille oscilloscope avec effet retro augmenté
+      // Grille simplifiée (Optimisation majeure)
       ctx.strokeStyle = pongColor;
-      ctx.globalAlpha = 0.15;
-      for (let i = 0; i < CANVAS_WIDTH; i += 20) {
-        ctx.beginPath();
-        ctx.moveTo(i, 0);
-        ctx.lineTo(i, CANVAS_HEIGHT);
-        ctx.stroke();
-      }
-      for (let i = 0; i < CANVAS_HEIGHT; i += 20) {
-        ctx.beginPath();
-        ctx.moveTo(0, i);
-        ctx.lineTo(CANVAS_WIDTH, i);
-        ctx.stroke();
-      }
-      
-      // Lignes de scan CRT (scanlines effect)
-      ctx.strokeStyle = pongColor;
-      ctx.globalAlpha = 0.08;
-      for (let i = 0; i < CANVAS_HEIGHT; i += 2) {
-        ctx.beginPath();
-        ctx.moveTo(0, i);
-        ctx.lineTo(CANVAS_WIDTH, i);
-        ctx.stroke();
-      }
-      
+      ctx.globalAlpha = 0.1;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
       ctx.globalAlpha = 1;
 
       // Trace de la balle (trail)
@@ -259,10 +247,6 @@ const PongGame = ({ onClose, accentColor = "#00ff00", onGameStateChange }) => {
 
       // Raquettes avec glow oscilloscope
       ctx.fillStyle = pongColor;
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = pongColor;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
       ctx.fillRect(0, params.playerY, PADDLE_WIDTH, PADDLE_HEIGHT);
       ctx.fillRect(
         CANVAS_WIDTH - PADDLE_WIDTH,
@@ -272,12 +256,9 @@ const PongGame = ({ onClose, accentColor = "#00ff00", onGameStateChange }) => {
       );
 
       // Balle avec glow
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = pongColor;
       ctx.beginPath();
       ctx.arc(params.ballX, params.ballY, BALL_SIZE / 2, 0, Math.PI * 2);
       ctx.fill();
-      ctx.shadowBlur = 0;
 
       // Ligne du milieu
       ctx.strokeStyle = pongColor;
@@ -294,22 +275,30 @@ const PongGame = ({ onClose, accentColor = "#00ff00", onGameStateChange }) => {
       ctx.fillStyle = pongColor;
       ctx.font = "bold 24px 'JetBrains Mono'";
       ctx.textAlign = "center";
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = pongColor;
       ctx.fillText(params.playerScore, CANVAS_WIDTH / 4, 40);
       ctx.fillText(params.aiScore, (CANVAS_WIDTH * 3) / 4, 40);
-      ctx.shadowBlur = 0;
+
+      // FPS
+      ctx.font = "10px monospace";
+      ctx.textAlign = "right";
+      ctx.fillText(`FPS: ${Math.round(fps)}`, CANVAS_WIDTH - 10, CANVAS_HEIGHT - 10);
     };
 
-    const gameLoop = () => {
-      if (gameStarted) {
-        update();
-      }
-      draw();
+    const gameLoop = (timestamp) => {
+      const deltaTime = timestamp - lastTime;
+      lastTime = timestamp;
+
+      const safeDelta = Math.min(deltaTime, 100); // Évite les sauts énormes si tab inactif
+      const timeScale = safeDelta / 16.67; // Normalisation base 60fps
+      const fps = safeDelta > 0 ? 1000 / safeDelta : 60;
+
+      if (gameStarted) update(timeScale);
+      draw(fps);
+      
       animationId = requestAnimationFrame(gameLoop);
     };
 
-    gameLoop();
+    animationId = requestAnimationFrame(gameLoop);
 
     return () => cancelAnimationFrame(animationId);
   }, [accentColor, gameStarted]);
@@ -322,7 +311,10 @@ const PongGame = ({ onClose, accentColor = "#00ff00", onGameStateChange }) => {
           style={{ backgroundColor: "#000000", color: "#00ff00", borderBottom: `2px solid #00ff00` }}
         >
           <span>PONG_OSCILLOSCOPE_V1.0</span>
-          <span>SCORE: {score}</span>
+          <div className="flex gap-4">
+            <span>HI: {highScore}</span>
+            <span>SCORE: {score}</span>
+          </div>
         </div>
 
         {/* Canvas */}
@@ -383,12 +375,19 @@ const PongGame = ({ onClose, accentColor = "#00ff00", onGameStateChange }) => {
   );
 };
 
-const SnakeGame = ({ onClose, accentColor, onGameStateChange }) => {
+const SnakeGame = ({ onClose, accentColor, onGameStateChange, controlMode, setControlMode }) => {
   const canvasRef = useRef(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
-  const [controlMode, setControlMode] = useState("ZQSD"); // "ZQSD" ou "WASD"
+  const [highScore, setHighScore] = useState(parseInt(localStorage.getItem("snake_highscore") || "0"));
+
+  useEffect(() => {
+    if (score > highScore) {
+      setHighScore(score);
+      localStorage.setItem("snake_highscore", score);
+    }
+  }, [score]);
 
   // Refs pour la logique de jeu (évite les re-renders)
   const snakeRef = useRef([]);
@@ -401,6 +400,7 @@ const SnakeGame = ({ onClose, accentColor, onGameStateChange }) => {
   const isEatingRef = useRef(false);
   const eatenFoodRef = useRef({ x: 0, y: 0 });
   const lastUpdateRef = useRef(0);
+  const lastFrameRef = useRef(performance.now());
   const animationRef = useRef(null);
 
   // Constantes
@@ -435,6 +435,7 @@ const SnakeGame = ({ onClose, accentColor, onGameStateChange }) => {
   const spawnFood = () => {
     let newFood;
     let isOnSnake;
+    let isOnObstacle;
     do {
       newFood = {
         x: Math.floor(Math.random() * COLS),
@@ -443,7 +444,10 @@ const SnakeGame = ({ onClose, accentColor, onGameStateChange }) => {
       isOnSnake = snakeRef.current.some(
         (segment) => segment.x === newFood.x && segment.y === newFood.y
       );
-    } while (isOnSnake);
+      isOnObstacle = obstaclesRef.current.some(
+        (obs) => obs.x === newFood.x && obs.y === newFood.y
+      );
+    } while (isOnSnake || isOnObstacle);
     foodRef.current = newFood;
   };
 
@@ -518,11 +522,15 @@ const SnakeGame = ({ onClose, accentColor, onGameStateChange }) => {
     }
 
     const loop = (timestamp) => {
+      const deltaTime = timestamp - lastFrameRef.current;
+      lastFrameRef.current = timestamp;
+      const fps = deltaTime > 0 ? 1000 / deltaTime : 60;
+
       if (!isDyingRef.current && timestamp - lastUpdateRef.current > SPEED) {
         update();
         lastUpdateRef.current = timestamp;
       }
-      draw(timestamp);
+      draw(timestamp, fps);
       animationRef.current = requestAnimationFrame(loop);
     };
 
@@ -598,7 +606,7 @@ const SnakeGame = ({ onClose, accentColor, onGameStateChange }) => {
     }
   };
 
-  const draw = (timestamp = performance.now()) => {
+  const draw = (timestamp = performance.now(), fps = 0) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -632,8 +640,6 @@ const SnakeGame = ({ onClose, accentColor, onGameStateChange }) => {
 
     // Obstacles (Boule Rouge)
     ctx.fillStyle = "#ef4444";
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = "#ef4444";
     obstaclesRef.current.forEach((obs) => {
       const x = obs.x * GRID_SIZE + GRID_SIZE / 2;
       const y = obs.y * GRID_SIZE + GRID_SIZE / 2;
@@ -647,8 +653,6 @@ const SnakeGame = ({ onClose, accentColor, onGameStateChange }) => {
     ctx.lineWidth = 3;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = accentColor;
     
     // Dessin du serpent avec angles droits (Logique Grid-Based)
     ctx.beginPath();
@@ -715,7 +719,6 @@ const SnakeGame = ({ onClose, accentColor, onGameStateChange }) => {
         const ey = eatenFoodRef.current.y * GRID_SIZE + GRID_SIZE / 2;
         
         ctx.fillStyle = accentColor;
-        ctx.shadowBlur = 15;
         ctx.beginPath();
         ctx.moveTo(ex, ey - 12);
         ctx.lineTo(ex + 12, ey);
@@ -723,7 +726,6 @@ const SnakeGame = ({ onClose, accentColor, onGameStateChange }) => {
         ctx.lineTo(ex - 12, ey);
         ctx.closePath();
         ctx.fill();
-        ctx.shadowBlur = 0;
     }
 
     // Nourriture (Glitch)
@@ -732,7 +734,6 @@ const SnakeGame = ({ onClose, accentColor, onGameStateChange }) => {
       const foodY = foodRef.current.y * GRID_SIZE + GRID_SIZE / 2;
       
       ctx.fillStyle = accentColor;
-      ctx.shadowBlur = 15;
       ctx.beginPath();
       // Forme de losange pour le glitch
       ctx.moveTo(foodX, foodY - 12);
@@ -742,8 +743,14 @@ const SnakeGame = ({ onClose, accentColor, onGameStateChange }) => {
       ctx.closePath();
       ctx.fill();
       
-      ctx.shadowBlur = 0;
     }
+
+    // FPS
+    ctx.fillStyle = accentColor;
+    ctx.font = "10px monospace";
+    ctx.textAlign = "right";
+    ctx.fillText(`FPS: ${Math.round(fps)}`, CANVAS_WIDTH - 10, CANVAS_HEIGHT - 10);
+
     ctx.restore();
   };
 
@@ -761,7 +768,10 @@ const SnakeGame = ({ onClose, accentColor, onGameStateChange }) => {
           style={{ backgroundColor: "#000000", color: accentColor, borderBottom: `2px solid ${accentColor}` }}
         >
           <span>SNAKE_SIGNAL_V1.0</span>
-          <span>SCORE: {score}</span>
+          <div className="flex gap-4">
+            <span>HI: {highScore}</span>
+            <span>SCORE: {score}</span>
+          </div>
         </div>
         <div className="relative w-full" style={{ position: "relative", aspectRatio: "800/300" }}>
             <canvas
@@ -818,12 +828,21 @@ const SnakeGame = ({ onClose, accentColor, onGameStateChange }) => {
   );
 };
 
-const LunarLanderGame = ({ onClose, accentColor, onGameStateChange }) => {
+const LunarLanderGame = ({ onClose, accentColor, onGameStateChange, controlMode, setControlMode }) => {
   const canvasRef = useRef(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [victory, setVictory] = useState(false);
   const [score, setScore] = useState(0);
+  const [highScore, setHighScore] = useState(parseInt(localStorage.getItem("lunar_highscore") || "0"));
+  const waitingForInputRef = useRef(false);
+
+  useEffect(() => {
+    if (score > highScore) {
+      setHighScore(score);
+      localStorage.setItem("lunar_highscore", score);
+    }
+  }, [score]);
 
   const landerRef = useRef({
     x: 400, y: 50,
@@ -840,8 +859,8 @@ const LunarLanderGame = ({ onClose, accentColor, onGameStateChange }) => {
 
   const CANVAS_WIDTH = 800;
   const CANVAS_HEIGHT = 300;
-  const GRAVITY = 0.012;
-  const THRUST_POWER = 0.025;
+  const GRAVITY = 0.025;
+  const THRUST_POWER = 0.05;
   const ROTATION_SPEED = 0.02;
 
   useEffect(() => {
@@ -892,26 +911,36 @@ const LunarLanderGame = ({ onClose, accentColor, onGameStateChange }) => {
     setVictory(false);
     setGameOver(false);
     setGameStarted(true);
+    waitingForInputRef.current = true;
     if (!keepScore) setScore(0);
   };
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+      const key = e.key.toLowerCase();
+      if(["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "z", "q", "s", "d", "w", "a"].includes(key)) {
         e.preventDefault();
       }
-      keysRef.current[e.key] = true;
+      keysRef.current[key] = true;
+      keysRef.current[e.key] = true; // Garder la compatibilité
+
+      if (gameStarted && waitingForInputRef.current) {
+        if (["arrowup", "arrowleft", "arrowright", " ", "z", "q", "s", "d", "w", "a"].includes(key)) {
+            waitingForInputRef.current = false;
+        }
+      }
 
       if (e.key === "Escape") {
         if (gameStarted) setGameStarted(false);
       }
       
-      if (!gameStarted && ["ArrowUp", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+      if (!gameStarted && ["arrowup", "arrowleft", "arrowright", " ", "z", "q", "s", "d", "w", "a"].includes(key)) {
         initGame(victory);
       }
     };
     
     const handleKeyUp = (e) => {
+      keysRef.current[e.key.toLowerCase()] = false;
       keysRef.current[e.key] = false;
     };
 
@@ -923,6 +952,9 @@ const LunarLanderGame = ({ onClose, accentColor, onGameStateChange }) => {
     };
   }, [gameStarted, victory]);
 
+  // Optimisation FPS Lunar Lander
+  const lastTimeRef = useRef(performance.now());
+
   useEffect(() => {
     if (!gameStarted || gameOver || victory) {
         if (animationRef.current) cancelAnimationFrame(animationRef.current);
@@ -930,26 +962,44 @@ const LunarLanderGame = ({ onClose, accentColor, onGameStateChange }) => {
         return;
     }
 
-    const loop = () => {
-        update();
-        draw();
+    const loop = (timestamp) => {
+        const deltaTime = timestamp - lastTimeRef.current;
+        lastTimeRef.current = timestamp;
+
+        const safeDelta = Math.min(deltaTime, 100);
+        const timeScale = safeDelta / 16.67;
+        const fps = safeDelta > 0 ? 1000 / safeDelta : 60;
+
+        update(timeScale);
+        draw(fps);
+        
         animationRef.current = requestAnimationFrame(loop);
     };
     animationRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animationRef.current);
   }, [gameStarted, gameOver, victory]);
 
-  const update = () => {
+  const update = (timeScale) => {
+    if (waitingForInputRef.current) return;
     const lander = landerRef.current;
+    const k = keysRef.current;
     
-    lander.thrusting = (keysRef.current["ArrowUp"] || keysRef.current[" "]) && fuelRef.current > 0;
+    const upKeys = controlMode === "ZQSD" ? ["arrowup", " ", "z"] : ["arrowup", " ", "w"];
+    const leftKeys = controlMode === "ZQSD" ? ["arrowleft", "q"] : ["arrowleft", "a"];
+    const rightKeys = controlMode === "ZQSD" ? ["arrowright", "d"] : ["arrowright", "d"];
+
+    lander.thrusting = upKeys.some(key => k[key]) && fuelRef.current > 0;
+
+    // Rotation (ajoutée pour jouabilité)
+    if (leftKeys.some(key => k[key])) lander.angle -= ROTATION_SPEED * timeScale;
+    if (rightKeys.some(key => k[key])) lander.angle += ROTATION_SPEED * timeScale;
 
     if (lander.thrusting) {
-        lander.vx += Math.cos(lander.angle) * THRUST_POWER;
-        lander.vy += Math.sin(lander.angle) * THRUST_POWER;
-        fuelRef.current = Math.max(0, fuelRef.current - (0.2 / 1.5));
+        lander.vx += Math.cos(lander.angle) * THRUST_POWER * timeScale;
+        lander.vy += Math.sin(lander.angle) * THRUST_POWER * timeScale;
+        fuelRef.current = Math.max(0, fuelRef.current - (0.2 / 1.5) * timeScale);
         
-        for(let i=0; i<3; i++) {
+        for(let i=0; i<1; i++) { // Réduction particules (3 -> 1)
             particlesRef.current.push({
                 x: lander.x - Math.cos(lander.angle) * 8,
                 y: lander.y - Math.sin(lander.angle) * 8,
@@ -960,14 +1010,14 @@ const LunarLanderGame = ({ onClose, accentColor, onGameStateChange }) => {
         }
     }
 
-    lander.vy += GRAVITY;
-    lander.x += lander.vx;
-    lander.y += lander.vy;
+    lander.vy += GRAVITY * timeScale;
+    lander.x += lander.vx * timeScale;
+    lander.y += lander.vy * timeScale;
 
     particlesRef.current.forEach(p => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life -= 0.05;
+        p.x += p.vx * timeScale;
+        p.y += p.vy * timeScale;
+        p.life -= 0.05 * timeScale;
     });
     particlesRef.current = particlesRef.current.filter(p => p.life > 0);
 
@@ -1002,7 +1052,7 @@ const LunarLanderGame = ({ onClose, accentColor, onGameStateChange }) => {
     }
   };
 
-  const draw = () => {
+  const draw = (fps = 0) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -1085,6 +1135,14 @@ const LunarLanderGame = ({ onClose, accentColor, onGameStateChange }) => {
     ctx.fillText(`ALT: ${Math.max(0, Math.floor(CANVAS_HEIGHT - lander.y - 20))}`, 10, 35);
     ctx.fillText(`VX: ${lander.vx.toFixed(1)}`, 10, 50);
     ctx.fillText(`VY: ${lander.vy.toFixed(1)}`, 10, 65);
+    ctx.fillText(`FPS: ${Math.round(fps)}`, 10, 80);
+
+    if (waitingForInputRef.current) {
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 20px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("APPUYEZ SUR UNE TOUCHE", CANVAS_WIDTH/2, CANVAS_HEIGHT/2 - 50);
+    }
   };
 
   return (
@@ -1094,7 +1152,10 @@ const LunarLanderGame = ({ onClose, accentColor, onGameStateChange }) => {
           style={{ backgroundColor: "#000000", color: accentColor, borderBottom: `2px solid ${accentColor}` }}
         >
           <span>LUNAR_LANDER_V0.5</span>
-          <span>SCORE: {score}</span>
+          <div className="flex gap-4">
+            <span>HI: {highScore}</span>
+            <span>SCORE: {score}</span>
+          </div>
         </div>
         <div className="relative w-full bg-black flex flex-col items-center justify-center" style={{ aspectRatio: "800/300" }}>
             <canvas
@@ -1135,10 +1196,19 @@ const LunarLanderGame = ({ onClose, accentColor, onGameStateChange }) => {
             )}
         </div>
         <div
-          className="px-6 py-3 text-xs font-mono text-center"
+          className="relative px-6 py-3 text-xs font-mono text-center"
           style={{ backgroundColor: "#000000", color: accentColor, borderTop: `2px solid ${accentColor}` }}
         >
-          <p className="text-sm">HAUT ou ESPACE pour propulser | ESC pour quitter</p>
+          <p className="text-sm">
+            HAUT/{controlMode === "ZQSD" ? "Z" : "W"} pour propulser | GAUCHE/DROITE ou {controlMode === "ZQSD" ? "Q/D" : "A/D"} pour tourner | ESC pour quitter
+          </p>
+          <button 
+            onClick={() => setControlMode(m => m === "ZQSD" ? "WASD" : "ZQSD")}
+            className="absolute right-6 top-1/2 -translate-y-1/2 px-2 py-1 border rounded hover:bg-white/10 transition-colors text-[10px] font-bold"
+            style={{ borderColor: accentColor, color: accentColor }}
+          >
+            MODE: {controlMode}
+          </button>
         </div>
     </div>
   );
@@ -1148,6 +1218,7 @@ const ArcadeModal = ({ onClose, accentColor = "#00ff00" }) => {
   const [gameIndex, setGameIndex] = useState(0);
   const [gameActive, setGameActive] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [controlMode, setControlMode] = useState("ZQSD");
 
   const handleClose = () => {
     setIsClosing(true);
@@ -1214,7 +1285,13 @@ const ArcadeModal = ({ onClose, accentColor = "#00ff00" }) => {
                 style={{ borderColor: accentColor, backgroundColor: "#000000", boxShadow: `0 0 30px ${accentColor}20` }}
                 onClick={(e) => e.stopPropagation()}
             >
-                <CurrentGame onClose={handleClose} accentColor={accentColor} onGameStateChange={setGameActive} />
+                <CurrentGame 
+                    onClose={handleClose} 
+                    accentColor={accentColor} 
+                    onGameStateChange={setGameActive}
+                    controlMode={controlMode}
+                    setControlMode={setControlMode}
+                />
             </div>
 
             {!gameActive && (
