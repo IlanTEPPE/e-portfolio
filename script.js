@@ -143,18 +143,18 @@ const App = () => {
               </div>
 
               <span className="text-[7px] md:text-[9px] font-bold text-emerald-800 tracking-[0.2em] uppercase flex-1 text-center">
-                Console_Session: Ilan_Teppe
+                {contentData?.ui?.boot?.session}
               </span>
 
               <span className="text-[7px] md:text-[9px] text-emerald-900 w-12 text-right">
-                v2.3.9
+                {contentData?.ui?.boot?.version}
               </span>
             </div>
 
             <div className="p-5 md:p-10">
               {/* Titre BIOS : Taille réduite et tracking normal sur mobile */}
               <div className="text-emerald-500 font-black text-lg md:text-2xl tracking-widest mb-6 uppercase border-b border-emerald-500/10 pb-4 text-center whitespace-nowrap">
-                GEII_BIOS_V2.3
+                {contentData?.ui?.boot?.bios}
               </div>
 
               {/* Logs : Police uniforme et interdiction de retour à la ligne */}
@@ -182,7 +182,7 @@ const App = () => {
                     }}
                     className="start-btn animate-btn"
                   >
-                    {"> EXECUTE_INTERFACE"}
+                    {contentData?.ui?.boot?.button}
                   </button>
                 )}
               </div>
@@ -213,19 +213,19 @@ const App = () => {
                       boxShadow: `0 0 8px ${accentColor}`,
                     }}
                   ></span>
-                  SYSTEM_CONNECTED
+                  {contentData?.ui?.header?.status}
                 </div>
                 <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter leading-none mb-2">
-                  ILAN <span style={{ color: accentColor }}>TEPPE</span>
+                  {contentData?.ui?.header?.firstname} <span style={{ color: accentColor }}>{contentData?.ui?.header?.lastname}</span>
                 </h1>
                 <p className="text-emerald-400 text-[10px] md:text-xs font-bold flex items-center gap-3 uppercase tracking-[0.2em] opacity-80">
                   <Icon name="cpu" size={14} style={{ color: accentColor }} />{" "}
-                  ÉTUDIANT BUT GEII
+                  {contentData?.ui?.header?.role}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <span className="px-3 py-1 bg-emerald-950/50 border border-emerald-800 text-[8px] md:text-[9px] text-emerald-400 font-bold rounded-full uppercase tracking-widest italic">
-                  READY_FOR_PROJECTS
+                  {contentData?.ui?.header?.badge}
                 </span>
                 <a
                   href="assets/CV.pdf"
@@ -234,13 +234,13 @@ const App = () => {
                   className="px-3 py-1 bg-emerald-950/50 border border-emerald-600 text-[8px] md:text-[9px] text-emerald-400 font-bold rounded-full uppercase tracking-widest italic hover:bg-emerald-900/50 transition-all"
                   title="Télécharger le CV"
                 >
-                  📥 DOWNLOAD_CV
+                  {contentData?.ui?.header?.cv}
                 </a>
               </div>
             </div>
             <div className="z-10 flex flex-col justify-end items-start md:items-end gap-1 text-[7px] md:text-[8px] text-emerald-800 font-bold font-mono border-l md:border-l-0 md:border-r border-emerald-900/40 pl-4 md:pl-0 md:pr-4">
-              <span>COORD: 45.1885° N, 5.7245° E</span>
-              <span>KERNEL: GEII_OS_v2.3</span>
+              <span>{contentData?.ui?.header?.coords}</span>
+              <span>{contentData?.ui?.header?.kernel}</span>
             </div>
           </header>
 
@@ -563,7 +563,7 @@ const App = () => {
                       fill={accentColor}
                       className="text-[5px] font-black tracking-widest uppercase"
                     >
-                      ACCUEIL
+                      {contentData?.ui?.pcb?.home}
                     </text>
                   </g>
                 </svg>
@@ -594,11 +594,8 @@ const App = () => {
                       </div>
                       <div>
                         <h2 className="text-xl md:text-2xl font-black uppercase text-white tracking-widest leading-none">
-                          {sections[activeSection]?.title || "Système"}
+                          {sections[activeSection]?.title || contentData?.ui?.section?.defaultTitle}
                         </h2>
-                        <p className="text-[9px] text-emerald-800 font-bold uppercase tracking-[0.5em] mt-2">
-                          BUS_ADDR: {activeSection.toUpperCase()}
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -652,7 +649,7 @@ const App = () => {
                             }}
                           >
                             <span className="text-[8px] font-bold tracking-widest uppercase">
-                              Voir
+                              {contentData?.ui?.card?.view}
                             </span>
                             <Icon name="maximize-2" size={12} />
                           </div>
@@ -718,24 +715,24 @@ const App = () => {
             <div className="flex items-center gap-6">
               <span className="flex items-center gap-2">
                 <span className="h-1 w-1 bg-emerald-500 rounded-full shadow-[0_0_8px_#10b981]"></span>
-                SYSTEM_ONLINE
+                {contentData?.ui?.footer?.status}
               </span>
               <span className="hidden md:inline opacity-20">|</span>
               <button
                 onClick={() =>
                   setModalItem({
-                    title: "MENTIONS LÉGALES",
-                    sub: "LEGAL_PROTOCOLS_V1.0",
-                    desc: "ÉDITEUR : Ilan Teppe.\nPROPRIÉTÉ : Tous les contenus présents sur ce site sont la propriété exclusive de Ilan Teppe. Les visuels d'illustration proviennent de sources libres de droits.",
+                    title: contentData?.ui?.legalModal?.title,
+                    sub: contentData?.ui?.legalModal?.sub,
+                    desc: contentData?.ui?.legalModal?.desc,
                   })
                 }
                 className="hover:text-emerald-500 transition-colors cursor-pointer"
               >
-                LEGAL_PROTOCOLS
+                {contentData?.ui?.footer?.legal}
               </button>
             </div>
             <span className="opacity-40 tracking-widest">
-              Ilan Teppe © 2026
+              {contentData?.ui?.footer?.copyright}
             </span>
           </footer>
         </div>
@@ -771,7 +768,7 @@ const App = () => {
 
             <div className="mb-10 border-b border-emerald-900/40 pb-6">
               <h3 className="text-2xl md:text-3xl font-black text-white mb-2 tracking-tighter leading-tight">
-                {modalItem.title || "Titre indisponible"}
+                {modalItem.title || contentData?.ui?.misc?.fallbackTitle}
               </h3>
               {modalItem.sub && (
                 <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-[0.4em]">

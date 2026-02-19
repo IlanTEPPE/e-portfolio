@@ -1,35 +1,74 @@
 {
   "bootSequence": [
-    "INITIALIZING_SYSTEM_CORE",
-    "CHECKING_VOLTAGE_RAILS",
-    "LOADING_GEII_KERNEL_V2.3",
-    "SCANNING_I2C_BUS",
-    "REGISTERING_USER_ILAN_TEPPE",
-    "STATUS_ALL_SYSTEMS_NOMINAL"
+    "INITIALISATION_COEUR_SYSTEME",
+    "CHARGEMENT_NOYAU_PORTFOLIO",
+    "ENREGISTREMENT_UTILISATEUR",
+    "STATUT_SYSTEMES : OK"
   ],
+  "ui": {
+    "boot": {
+      "session": "Session_Console: Ilan_Teppe",
+      "version": "v1.0",
+      "bios": "BIOS_PORTFOLIO_V1.0",
+      "button": "> OUVRIR_PORTFOLIO"
+    },
+    "header": {
+      "status": "SYSTEME_CONNECTE",
+      "firstname": "ILAN",
+      "lastname": "TEPPE",
+      "role": "ÉTUDIANT BUT GEII",
+      "badge": "PRET_POUR_DES_PROJETS",
+      "cv": "📥 TELECHARGER_CV",
+      "coords": "COORD: 45.1989° N, 5.7762° E",
+      "kernel": "NOYAU: PORTFOLIO_OS_v1.0"
+    },
+    "section": {
+      "defaultTitle": "Système"
+    },
+    "pcb": {
+      "home": "ACCUEIL"
+    },
+    "card": {
+      "view": "Voir"
+    },
+    "footer": {
+      "status": "SYSTEME_EN_LIGNE",
+      "legal": "PROTOCOLES_LEGAUX",
+      "copyright": "Ilan Teppe © 2026"
+    },
+    "legalModal": {
+      "title": "MENTIONS LÉGALES",
+      "sub": "PROTOCOLES_LEGAUX_V1.0",
+      "desc": "ÉDITEUR : Ilan Teppe.\nPROPRIÉTÉ : Tous les contenus présents sur ce site sont la propriété exclusive de Ilan Teppe. Les visuels d'illustration proviennent de sources libres de droits."
+    },
+    "misc": {
+      "fallbackTitle": "Titre indisponible"
+    }
+  },
   "sections": {
     "boot": {
       "title": "Accueil",
       "icon": "zap",
-      "content": "Système v2.3.9 prêt. Performance mobile optimisée. Sélectionnez une branche du circuit pour l'exploration des données."
+      "content": "Sélectionnez une pastille du circuit pour explorer les différentes sections. Puis cliquer sur les cartes pour plus de détails."
     },
     "home": {
       "title": "Profil",
       "icon": "user",
-      "content": "Synthèse du parcours académique de l'unité Ilan Teppe.",
+      "content": "Parcours académique de Ilan Teppe.",
       "details": [
         {
           "id": "edu1",
-          "title": "UGA Grenoble",
-          "sub": "BUT GEII (2024-2027)",
-          "desc": "Formation en automatismes, électronique embarquée et réseaux industriels.",
-          "image": "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=400&q=60"
+          "title": "BUT GEII (2024-2027)",
+          "sub": "UGA Grenoble",
+          "desc": "Formation en BUT Génie électrique et informatique industrielle à l'Université Grenoble Alpes.\nSpécialisé en électronique et système embarqués.",
+          "image": "assets/iut1_grenoble.png"
         },
         {
           "id": "edu2",
-          "title": "Lycée Germaine Tillion",
-          "sub": "Baccalauréat Général",
-          "desc": "Spécialités : Maths, Physique, SI. Fondamentaux de l'ingénierie."
+          "title": "Baccalauréat Général (2021-2024)",
+          "sub": "Lycée Germaine Tillion",
+          "desc": "Spécialités : Maths, Physique, SI.",
+          "image": "assets/lycee.jpg"
         }
       ]
     },
@@ -39,21 +78,21 @@
       "details": [
         {
           "id": "sk1",
-          "title": "Développement",
+          "title": "Développement & Firmware",
           "sub": "Python, C, VHDL",
-          "desc": "Création de firmware et scripts de traitement industriel."
+          "desc": "Maîtrise de la programmation bas niveau pour microcontrôleurs.\nJ'utilise le C pour l'efficacité système, le VHDL pour la logique matérielle sur FPGA et Python pour le prototypage rapide et le traitement de données.\nCette triple approche me permet d'intervenir à chaque étape de la couche logicielle d'un système embarqué."
         },
         {
           "id": "sk2",
-          "title": "CAO Électronique",
+          "title": "CAO & Hardware Design",
           "sub": "KiCad & Routage",
-          "desc": "Conception de schémas et de circuits imprimés multicouches."
+          "desc": "Conception complète de systèmes électroniques sous KiCad.\nDe la saisie de schéma au routage de cartes (PCB), j'intègre les contraintes de fabrication et de brasage.\nJe maîtrise également les logiciels de schématique KNX pour les solutions de gestion technique du bâtiment."
         },
         {
           "id": "sk3",
-          "title": "Industriel",
+          "title": "Environnement Industriel & Sécurité",
           "sub": "API & B1V",
-          "desc": "Programmation d'automates Schneider/Siemens et sécurité électrique."
+          "desc": "Capacité à opérer en environnement haute tension grâce à mon habilitation électrique B1V (2025-2028).\nJe suis formé au câblage d'armoires électriques de puissance et à la programmation d'automates industriels (API) pour l'automatisation de processus."
         }
       ]
     },
@@ -63,17 +102,22 @@
       "details": [
         {
           "id": "pr1",
-          "title": "Robotique",
-          "sub": "Suiveur de ligne",
-          "desc": "Conception complète : électronique, mécanique et asservissement PID.",
+          "title": "Suiveur de ligne et lanceur de balle",
+          "sub": "Robotique",
+          "desc": "Pilotage de projets de A à Z. J'ai conçu l'architecture électronique, réalisé le routage des cartes et implémenté les algorithmes d'asservissement (PID) pour garantir précision et réactivité.\nCe projet m'a permis de confronter la théorie de l'automatique à la réalité mécanique du terrain.",
           "image": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=400&q=60"
         },
         {
           "id": "pr2",
+          "title": "Synthétiseur Audio",
+          "sub": "Électronique Analogique",
+          "desc": "Conception d'un instrument électronique embarqué impliquant du design de circuits analogiques et numériques.\nTravail approfondi sur le conditionnement du signal, le brasage de composants et l'optimisation du code pour la génération sonore en temps réel."
+        },
+        {
+          "id": "pr3",
           "title": "Armoire Électrique",
-          "sub": "Cellule 2024",
-          "desc": "Étude et câblage d'une installation de puissance industrielle.",
-          "image": "https://images.unsplash.com/photo-1555664424-778a1e5e1b48?auto=format&fit=crop&w=400&q=60"
+          "sub": "Infrastructure Électrique",
+          "desc": "Étude et câblage d'une installation de puissance industrielle.\nCe projet a exigé une lecture de plans rigoureuse, le respect des normes de sécurité et une organisation méticuleuse pour assurer la maintenance future des installations."
         }
       ]
     },
@@ -83,22 +127,22 @@
       "details": [
         {
           "id": "h1",
-          "title": "VTT Downhill",
+          "title": "VTT Downhill & Ski Alpin",
           "sub": "Sport Engagé",
-          "desc": "Pratique intensive privilégiant la technique et l'analyse du terrain.",
+          "desc": "Des sports engagés qui demandent une analyse rapide de trajectoire, une gestion du risque calculée et une grande résilience face à l'effort.\nCes disciplines renforcent ma capacité à rester concentré et réactif dans des environnements exigeants.",
           "image": "https://images.unsplash.com/photo-1544191133-7253b26c04f9?auto=format&fit=crop&w=400&q=60"
         },
         {
           "id": "h2",
-          "title": "Ski Alpin",
-          "sub": "Hiver",
-          "desc": "Maîtrise technique et recherche de performance."
+          "title": "Gaming",
+          "sub": "League of Legends",
+          "desc": "Pratique compétitive axée sur la coordination d'équipe et la prise de décision stratégique sous pression.\nCette expérience développe ma communication interpersonnelle et ma capacité à occuper un rôle spécifique au sein d'un groupe pour atteindre un objectif commun."
         },
         {
           "id": "h3",
-          "title": "Gaming",
-          "sub": "League of Legends",
-          "desc": "Stratégie et coordination d'équipe sous pression."
+          "title": "Assemblage PC",
+          "sub": "Hobby",
+          "desc": "Passionné par le Hardware, je monte et configure des machines personnelles.\nCela développe mes compétences techniques en informatique et en électronique."
         }
       ]
     },
