@@ -43,26 +43,9 @@ svg { overflow: visible !important; }
     transform-origin: center;
 }
 
-/* Effet de balayage sur le terminal */
-.scanline::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: rgba(16, 185, 129, 0.1);
-    animation: scan 18s linear infinite;
-    pointer-events: none;
-}
-@keyframes scan {
-    0% { top: 0; }
-    100% { top: 100%; }
-}
-
 .pcb-blueprint {
-    background-color: #010a08;
-    background-image:radial-gradient(circle at 50% 40%,rgba(calc(16 + (255 - 16) * var(--temp-ratio, 0)),calc(185 - (185) * var(--temp-ratio, 0)),calc(129 - (129) * var(--temp-ratio, 0)),var(--bg-opacity, 0.15)) 0%,rgba(1, 12, 9, 0.8) 110%),repeating-linear-gradient(45deg, rgba(6, 78, 59, 0.03) 0px, rgba(6, 78, 59, 0.03) 1px, transparent 1px, transparent 10px),repeating-linear-gradient(-45deg, rgba(6, 78, 59, 0.03) 0px, rgba(6, 78, 59, 0.03) 1px, transparent 1px, transparent 10px),linear-gradient(rgba(16, 185, 129, 0.07) 1px, transparent 1px),linear-gradient(90deg, rgba(16, 185, 129, 0.07) 1px, transparent 1px);
+    background-color: #010c09;
+    background-image:radial-gradient(circle at 50% 40%, rgba(16, 185, 129, 0.15) 0%, rgba(1, 12, 9, 0.8) 110%),repeating-linear-gradient(45deg, rgba(6, 78, 59, 0.03) 0px, rgba(6, 78, 59, 0.03) 1px, transparent 1px, transparent 10px),repeating-linear-gradient(-45deg, rgba(6, 78, 59, 0.03) 0px, rgba(6, 78, 59, 0.03) 1px, transparent 1px, transparent 10px),linear-gradient(rgba(16, 185, 129, 0.07) 1px, transparent 1px),linear-gradient(90deg, rgba(16, 185, 129, 0.07) 1px, transparent 1px);
     background-size: 100% 100%, 20px 20px, 20px 20px, 40px 40px, 40px 40px;
     background-position: center;
     position: fixed;
@@ -152,8 +135,8 @@ svg { overflow: visible !important; }
 
 .start-btn:hover {
     background: rgba(16, 185, 129, 0.2);
-    border-color: #fbbf24;
-    color: #fbbf24;
+    border-color: #10b981;
+    color: #10b981;
     box-shadow: 0 0 30px rgba(16, 185, 129, 0.1);
     transform: translateY(-2px);
 }
@@ -163,7 +146,7 @@ svg { overflow: visible !important; }
     content: "";
     position: absolute;
     top: -50%; left: -50%; width: 200%; height: 200%;
-    background: linear-gradient(45deg, transparent, rgba(251, 191, 36, 0.1), transparent);
+    background: linear-gradient(45deg, transparent, rgba(16, 185, 129, 0.1), transparent);
     transform: rotate(45deg);
     transition: 0.5s;
 }
@@ -237,73 +220,6 @@ max-height: 85vh; /* Plus de marge sur petit mobile */
     text-shadow: 0 0 2px rgba(16, 185, 129, 0.5);
 }
 
-/* --- Style des Potentiomètres PCB --- */
-.pot-slider {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 35px; /* On augmente la hauteur réelle pour la hitbox */
-    background: transparent !important; /* SUPPRIME LE CUBE */
-    outline: none;
-    touch-action: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-}
-
-/* On crée la piste visuelle via le sélecteur de "track" */
-.pot-slider::-webkit-slider-runnable-track {
-    width: 100%;
-    height: 2px;
-    background: #062d24;
-    border-radius: 2px;
-}
-
-.pot-slider::-moz-range-track {
-    width: 100%;
-    height: 2px;
-    background: #062d24;
-    border-radius: 2px;
-}
-
-/* Le rond du potentiomètre */
-.pot-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 8px !important;
-    height: 8px !important;
-    background: currentColor;
-    border-radius: 50%;
-    margin-top: -3px;
-    border: none;
-}
-
-.pot-slider::-moz-range-thumb {
-    width: 8px !important;
-    height: 8px !important;
-    background: currentColor;
-    border-radius: 50%;
-    border: none;
-}
-
-.pot-label {
-    font-size: 3px;
-    fill: #0a4d3c;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-@keyframes shake-intensity {
-    0%,100% {transform: translate(0, 0);}
-    25% {transform: translate(calc(-1px * var(--shake-val)), calc(1px * var(--shake-val)));}
-    50% {transform: translate(calc(1px * var(--shake-val)), calc(-1px * var(--shake-val)));}
-    75% {transform: translate(calc(-1px * var(--shake-val)), calc(-1px * var(--shake-val)));}
-}
-.voltage-shake {
-    animation: shake-intensity 0.1s infinite;
-}
-
 .terminal-window {
     background: #020d0a;
     border: 1px solid rgba(16, 185, 129, 0.2);
@@ -342,7 +258,6 @@ max-height: 85vh; /* Plus de marge sur petit mobile */
     .pcb-blueprint,
     .boot-screen,
     .start-btn,
-    .voltage-shake .voltage-shake,
     .scope-container,
     .animate-btn,
     .ring-passive {
