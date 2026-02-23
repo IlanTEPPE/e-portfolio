@@ -17,7 +17,7 @@
       "firstname": "ILAN",
       "lastname": "TEPPE",
       "role": "ÉTUDIANT BUT GEII",
-      "badge": "PRET_POUR_DES_PROJETS",
+      "badge": "PRÊT_À_TRAVAILLER",
       "cv": "📥 TELECHARGER_CV",
       "coords": "COORD: 45.1989° N, 5.7762° E",
       "kernel": "NOYAU: PORTFOLIO_OS_v1.0"
@@ -49,7 +49,7 @@
     "boot": {
       "title": "Accueil",
       "icon": "zap",
-      "content": "Sélectionnez une pastille du circuit pour explorer les différentes sections. Puis cliquer sur les cartes pour plus de détails."
+      "content": "Sélectionnez une pastille du circuit eléctrique pour explorer les différentes sections. Puis cliquer sur les cartes pour plus de détails."
     },
     "home": {
       "title": "Profil",
@@ -60,14 +60,14 @@
           "id": "edu1",
           "title": "BUT GEII (2024-2027)",
           "sub": "UGA Grenoble",
-          "desc": "Formation en BUT Génie électrique et informatique industrielle à l'Université Grenoble Alpes.\nSpécialisé en électronique et système embarqués.",
+          "desc": "Formation en BUT Génie électrique et informatique industrielle à l'Université Grenoble Alpes.\n\nSpécialisé en électronique et systèmes embarqués.",
           "image": "assets/iut1_grenoble.png"
         },
         {
           "id": "edu2",
           "title": "Baccalauréat Général (2021-2024)",
           "sub": "Lycée Germaine Tillion",
-          "desc": "Spécialités : Maths, Physique, SI.",
+          "desc": "Baccalauréat Général\nSpécialités : Maths, Physique, SI.",
           "image": "assets/lycee.jpg"
         }
       ]
@@ -80,19 +80,22 @@
           "id": "sk1",
           "title": "Développement & Firmware",
           "sub": "Python, C, VHDL",
-          "desc": "Maîtrise de la programmation bas niveau pour microcontrôleurs.\nJ'utilise le C pour l'efficacité système, le VHDL pour la logique matérielle sur FPGA et Python pour le prototypage rapide et le traitement de données.\nCette triple approche me permet d'intervenir à chaque étape de la couche logicielle d'un système embarqué."
+          "desc": "Maîtrise de la programmation bas niveau pour microcontrôleurs.\nJ'utilise le C sur PIC et STM32, le VHDL sur FPGA et le Python.",
+          "image": "assets/prog.jpg"
         },
         {
           "id": "sk2",
           "title": "CAO & Hardware Design",
           "sub": "KiCad & Routage",
-          "desc": "Conception complète de systèmes électroniques sous KiCad.\nDe la saisie de schéma au routage de cartes (PCB), j'intègre les contraintes de fabrication et de brasage.\nJe maîtrise également les logiciels de schématique KNX pour les solutions de gestion technique du bâtiment."
+          "desc": "Conception complète de systèmes électroniques sous KiCad.\nDe la saisie de schéma au routage de cartes (PCB), j'intègre les contraintes de fabrication et de brasage.\nJe maîtrise également les logiciels de schématique KNX pour les solutions de gestion technique du bâtiment.",
+          "image": "assets/pcb.jpg"
         },
         {
           "id": "sk3",
           "title": "Environnement Industriel & Sécurité",
           "sub": "API & B1V",
-          "desc": "Capacité à opérer en environnement haute tension grâce à mon habilitation électrique B1V (2025-2028).\nJe suis formé au câblage d'armoires électriques de puissance et à la programmation d'automates industriels (API) pour l'automatisation de processus."
+          "desc": "Capacité à opérer en environnement basse tension grâce à mon habilitation électrique B1V (2025-2028).\nJe suis formé au câblage d'armoires électriques de puissance et à la programmation d'automates industriels.",
+          "image": "assets/armoire.jpg"
         }
       ]
     },
@@ -104,20 +107,21 @@
           "id": "pr1",
           "title": "Suiveur de ligne et lanceur de balle",
           "sub": "Robotique",
-          "desc": "Pilotage de projets de A à Z. J'ai conçu l'architecture électronique, réalisé le routage des cartes et implémenté les algorithmes d'asservissement (PID) pour garantir précision et réactivité.\nCe projet m'a permis de confronter la théorie de l'automatique à la réalité mécanique du terrain.",
-          "image": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=400&q=60"
+          "desc": "Pilotage de projets de A à Z. J'ai conçu l'architecture électronique, réalisé le routage des cartes et réalisé la programmation."
         },
         {
           "id": "pr2",
           "title": "Synthétiseur Audio",
           "sub": "Électronique Analogique",
-          "desc": "Conception d'un instrument électronique embarqué impliquant du design de circuits analogiques et numériques.\nTravail approfondi sur le conditionnement du signal, le brasage de composants et l'optimisation du code pour la génération sonore en temps réel."
+          "desc": "Conception d'un instrument électronique embarqué impliquant du design de circuits analogiques et numériques.\nTravail approfondi sur le conditionnement du signal, le brasage de composants et l'optimisation du code pour la génération sonore en temps réel.",
+          "image": "assets/synthe.jpg"
         },
         {
           "id": "pr3",
           "title": "Armoire Électrique",
           "sub": "Infrastructure Électrique",
-          "desc": "Étude et câblage d'une installation de puissance industrielle.\nCe projet a exigé une lecture de plans rigoureuse, le respect des normes de sécurité et une organisation méticuleuse pour assurer la maintenance future des installations."
+          "desc": "Étude et câblage d'une installation de puissance industrielle.\nCe projet a exigé une lecture de plans rigoureuse, le respect des normes de sécurité et une organisation méticuleuse.",
+          "image": "assets/coffret.jpg"
         }
       ]
     },
@@ -130,13 +134,14 @@
           "title": "VTT Downhill & Ski Alpin",
           "sub": "Sport Engagé",
           "desc": "Des sports engagés qui demandent une analyse rapide de trajectoire, une gestion du risque calculée et une grande résilience face à l'effort.\nCes disciplines renforcent ma capacité à rester concentré et réactif dans des environnements exigeants.",
-          "image": "https://images.unsplash.com/photo-1544191133-7253b26c04f9?auto=format&fit=crop&w=400&q=60"
+          "image": "assets/vtt.jpg"
         },
         {
           "id": "h2",
           "title": "Gaming",
           "sub": "League of Legends",
-          "desc": "Pratique compétitive axée sur la coordination d'équipe et la prise de décision stratégique sous pression.\nCette expérience développe ma communication interpersonnelle et ma capacité à occuper un rôle spécifique au sein d'un groupe pour atteindre un objectif commun."
+          "desc": "Pratique compétitive axée sur la coordination d'équipe et la prise de décision stratégique sous pression.\nCette expérience développe ma communication et ma capacité à occuper un rôle spécifique au sein d'un groupe pour atteindre un objectif commun.",
+          "image": "assets/lol.jpg"
         },
         {
           "id": "h3",
